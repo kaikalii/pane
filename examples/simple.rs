@@ -15,18 +15,12 @@ fn main() {
         TextureSettings::new(),
     ).unwrap();
 
-    let ui: Region<usize, ()> = Region::from(vec![
-        Widget::label("Hello there Alex!").region(),
-        Region::from(vec![
-            Widget::label("How")
-                .region()
-                .with_color([1.0, 0.0, 0.0, 1.0]),
-            Widget::label("Are")
-                .region()
-                .with_color([0.0, 1.0, 0.0, 1.0]),
-            Widget::label("You?")
-                .region()
-                .with_color([0.0, 0.0, 1.0, 1.0]),
+    let ui: Widget<usize, ()> = Widget::from(vec![
+        Widget::label("Hello there Alex!"),
+        Widget::from(vec![
+            Widget::label("How").with_background_color([1.0, 0.0, 0.0, 1.0]),
+            Widget::label("Are").with_background_color([0.0, 1.0, 0.0, 1.0]),
+            Widget::label("You?").with_background_color([0.0, 0.0, 1.0, 1.0]),
         ]),
     ]);
 

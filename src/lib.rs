@@ -49,13 +49,13 @@ pub enum Orientation {
 }
 
 #[derive(Clone)]
-pub enum Widget<'a, I: 'a, S: 'a>
+pub enum WidgetKind<'a, I: 'a, S: 'a>
 where
     I: Copy + Eq + Hash,
     S: Sized,
 {
-    SubRegion {
-        subs: Vec<Region<'a, I, S>>,
+    SubWidget {
+        subs: Vec<Widget<'a, I, S>>,
         subs_map: HashMap<I, usize>,
     },
     Label {
@@ -66,83 +66,166 @@ where
     Button {
         string: Option<(String, [f32; 4])>,
         max_text_size: u32,
-        callback: Rc<Box<FnMut(&mut Region<'a, I, S>, &mut S)>>,
+        callback: Rc<Box<FnMut(&mut Widget<'a, I, S>, &mut S)>>,
     },
     Slider {
         color: [f32; 4],
-        callback: Rc<Box<FnMut(&'a mut Region<'a, I, S>, &'a mut S) -> (f64, f64, &'a mut f64)>>,
+        callback: Rc<Box<FnMut(&'a mut Widget<'a, I, S>, &'a mut S) -> (f64, f64, &'a mut f64)>>,
     },
     EntryField {
         background_string: Option<(String, [f32; 4])>,
         max_text_size: u32,
         color: [f32; 4],
-        callback: Rc<Box<FnMut(&'a mut Region<'a, I, S>, &'a mut S) -> &'a mut String>>,
+        callback: Rc<Box<FnMut(&'a mut Widget<'a, I, S>, &'a mut S) -> &'a mut String>>,
     },
 }
 
 static DEFAULT_MAX_TEXT_SIZE: u32 = 100;
 
-impl<'a, I: 'a, S: 'a> Widget<'a, I, S>
+impl<'a, I: 'a, S: 'a> WidgetKind<'a, I, S>
 where
     I: Copy + Eq + Hash,
     S: Sized,
 {
+}
+
+#[derive(Clone)]
+pub struct Widget<'a, I: 'a, S: 'a>
+where
+    I: Copy + Eq + Hash,
+    S: Sized,
+{
+    rect: Rect,
+    kind: WidgetKind<'a, I, S>,
+    orientation: Orientation,
+    spacing: f64,
+    background_color: [f32; 4],
+}
+
+impl<'a, I, S, R> From<R> for Widget<'a, I, S>
+where
+    I: Copy + Eq + Hash,
+    S: Sized,
+    R: IntoIterator<Item = Self>,
+{
+    fn from(regions: R) -> Self {
+        Widget::new().with_sub_regions(regions)
+    }
+}
+
+impl<'a, I, S> ops::Index<I> for Widget<'a, I, S>
+where
+    I: Copy + Eq + Hash,
+    S: Sized,
+{
+    type Output = Widget<'a, I, S>;
+    fn index(&self, i: I) -> &Self::Output {
+        if let WidgetKind::SubWidget {
+            ref subs,
+            ref subs_map,
+        } = self.kind
+        {
+            &subs[subs_map[&i]]
+        } else {
+            panic!("Can only index subwidget widgets")
+        }
+    }
+}
+
+impl<'a, I, S> ops::IndexMut<I> for Widget<'a, I, S>
+where
+    I: Copy + Eq + Hash,
+    S: Sized,
+{
+    fn index_mut(&mut self, i: I) -> &mut Self::Output {
+        if let WidgetKind::SubWidget {
+            ref mut subs,
+            ref subs_map,
+        } = self.kind
+        {
+            &mut subs[subs_map[&i]]
+        } else {
+            panic!("Can only index subregion widgets")
+        }
+    }
+}
+
+impl<'a, I, S> Widget<'a, I, S>
+where
+    I: Copy + Eq + Hash,
+    S: Sized,
+{
+    pub fn new() -> Self {
+        Widget {
+            rect: Rect {
+                pos: [0.0, 0.0],
+                size: [1.0, 1.0],
+            },
+            kind: WidgetKind::SubWidget {
+                subs: Vec::new(),
+                subs_map: HashMap::new(),
+            },
+            orientation: Orientation::Automatic,
+            spacing: 10.0,
+            background_color: [0.0, 0.0, 0.0, 0.0],
+        }
+    }
     pub fn label(string: &str) -> Widget<'a, I, S> {
-        Widget::Label {
+        Widget::new().with_kind(WidgetKind::Label {
             string: string.to_string(),
             max_text_size: DEFAULT_MAX_TEXT_SIZE,
             color: [1.0, 1.0, 1.0, 1.0],
-        }
+        })
     }
     pub fn button<F>(string: Option<&str>, callback: F) -> Widget<'a, I, S>
     where
-        F: 'static + FnMut(&mut Region<'a, I, S>, &mut S),
+        F: 'static + FnMut(&mut Widget<'a, I, S>, &mut S),
     {
-        Widget::Button {
+        Widget::new().with_kind(WidgetKind::Button {
             string: string.map(|s| (s.to_string(), [1.0, 1.0, 1.0, 1.0])),
             max_text_size: DEFAULT_MAX_TEXT_SIZE,
             callback: Rc::new(Box::new(callback)),
-        }
+        })
     }
     pub fn slider<F>(callback: F) -> Widget<'a, I, S>
     where
-        F: 'static + FnMut(&'a mut Region<'a, I, S>, &'a mut S) -> (f64, f64, &'a mut f64),
+        F: 'static + FnMut(&'a mut Widget<'a, I, S>, &'a mut S) -> (f64, f64, &'a mut f64),
     {
-        Widget::Slider {
+        Widget::new().with_kind(WidgetKind::Slider {
             color: [1.0, 1.0, 1.0, 1.0],
             callback: Rc::new(Box::new(callback)),
-        }
+        })
     }
     pub fn entry_field<F>(
         background_string: Option<(&str, [f32; 4])>,
         callback: F,
     ) -> Widget<'a, I, S>
     where
-        F: 'static + FnMut(&'a mut Region<'a, I, S>, &'a mut S) -> &'a mut String,
+        F: 'static + FnMut(&'a mut Widget<'a, I, S>, &'a mut S) -> &'a mut String,
     {
-        Widget::EntryField {
+        Widget::new().with_kind(WidgetKind::EntryField {
             background_string: background_string.map(|(s, c)| (s.to_string(), c)),
             max_text_size: DEFAULT_MAX_TEXT_SIZE,
             color: [1.0, 1.0, 1.0, 1.0],
             callback: Rc::new(Box::new(callback)),
-        }
+        })
     }
     pub fn with_color(mut self, col: [f32; 4]) -> Self {
-        use self::Widget::*;
-        match self {
+        use self::WidgetKind::*;
+        match self.kind {
             Label { ref mut color, .. }
             | Slider { ref mut color, .. }
             | EntryField { ref mut color, .. } => *color = col,
             Button { ref mut string, .. } => if let Some((_, color)) = string {
                 *color = col;
             },
-            SubRegion { .. } => (),
+            SubWidget { .. } => (),
         }
         self
     }
     pub fn with_max_text_size(mut self, max_size: u32) -> Self {
-        use self::Widget::*;
-        match self {
+        use self::WidgetKind::*;
+        match self.kind {
             Label {
                 ref mut max_text_size,
                 ..
@@ -155,107 +238,16 @@ where
                 ref mut max_text_size,
                 ..
             } => *max_text_size = max_size,
-            SubRegion { .. } | Slider { .. } => (),
+            SubWidget { .. } | Slider { .. } => (),
         }
-        self
-    }
-    pub fn region(self) -> Region<'a, I, S> {
-        Region::full().with_widget(self)
-    }
-}
-
-#[derive(Clone)]
-pub struct Region<'a, I: 'a, S: 'a>
-where
-    I: Copy + Eq + Hash,
-    S: Sized,
-{
-    rect: Rect,
-    widget: Widget<'a, I, S>,
-    orientation: Orientation,
-    spacing: f64,
-    color: [f32; 4],
-}
-
-impl<'a, I, S, R> From<R> for Region<'a, I, S>
-where
-    I: Copy + Eq + Hash,
-    S: Sized,
-    R: IntoIterator<Item = Self>,
-{
-    fn from(regions: R) -> Self {
-        Region::full().with_sub_regions(regions)
-    }
-}
-
-impl<'a, I, S> ops::Index<I> for Region<'a, I, S>
-where
-    I: Copy + Eq + Hash,
-    S: Sized,
-{
-    type Output = Region<'a, I, S>;
-    fn index(&self, i: I) -> &Self::Output {
-        if let Widget::SubRegion {
-            ref subs,
-            ref subs_map,
-        } = self.widget
-        {
-            &subs[subs_map[&i]]
-        } else {
-            panic!("Can only index subregion widgets")
-        }
-    }
-}
-
-impl<'a, I, S> ops::IndexMut<I> for Region<'a, I, S>
-where
-    I: Copy + Eq + Hash,
-    S: Sized,
-{
-    fn index_mut(&mut self, i: I) -> &mut Self::Output {
-        if let Widget::SubRegion {
-            ref mut subs,
-            ref subs_map,
-        } = self.widget
-        {
-            &mut subs[subs_map[&i]]
-        } else {
-            panic!("Can only index subregion widgets")
-        }
-    }
-}
-
-impl<'a, I, S> Region<'a, I, S>
-where
-    I: Copy + Eq + Hash,
-    S: Sized,
-{
-    pub fn full() -> Self {
-        Region {
-            rect: Rect {
-                pos: [0.0, 0.0],
-                size: [1.0, 1.0],
-            },
-            widget: Widget::SubRegion {
-                subs: Vec::new(),
-                subs_map: HashMap::new(),
-            },
-            orientation: Orientation::Automatic,
-            spacing: 10.0,
-            color: [0.0, 0.0, 0.0, 0.0],
-        }
-    }
-    pub fn from_to(mut self, top_left: [f64; 2], bottom_right: [f64; 2]) -> Self {
-        self.rect.pos = top_left;
-        self.rect.size = sub(bottom_right, self.rect.pos);
         self
     }
     pub fn with_spacing(mut self, spacing: f64) -> Self {
         self.spacing = spacing;
         self
     }
-    pub fn with_color(mut self, color: [f32; 4]) -> Self {
-        self.color = color;
+    pub fn with_background_color(mut self, color: [f32; 4]) -> Self {
+        self.background_color = color;
         self
     }
     pub fn with_orientation(mut self, orientation: Orientation) -> Self {
@@ -265,29 +257,34 @@ where
     pub fn with_sub_regions<R: IntoIterator<Item = Self>>(
         mut self,
         regions: R,
-    ) -> Region<'a, I, S> {
-        self.widget = Widget::SubRegion {
+    ) -> Widget<'a, I, S> {
+        self.kind = WidgetKind::SubWidget {
             subs: regions.into_iter().collect(),
             subs_map: HashMap::new(),
         };
         self
     }
-    pub fn with_widget(mut self, widget: Widget<'a, I, S>) -> Self {
-        self.widget = widget;
+    pub fn with_kind(mut self, kind: WidgetKind<'a, I, S>) -> Self {
+        self.kind = kind;
+        self
+    }
+    pub fn with_from_to(mut self, top_left: [f64; 2], bottom_right: [f64; 2]) -> Self {
+        self.rect.pos = top_left;
+        self.rect.size = sub(bottom_right, self.rect.pos);
         self
     }
     pub fn insert_region(&mut self, region: Self) {
-        if let Widget::SubRegion { ref mut subs, .. } = self.widget {
+        if let WidgetKind::SubWidget { ref mut subs, .. } = self.kind {
             subs.push(region);
         } else {
             panic!("Cannot insert region into sub region widget");
         }
     }
     pub fn insert_indexed(&mut self, index: I, region: Self) -> Option<Self> {
-        if let Widget::SubRegion {
+        if let WidgetKind::SubWidget {
             ref mut subs,
             ref mut subs_map,
-        } = self.widget
+        } = self.kind
         {
             if let Some(replace_index) = subs_map.get(&index).cloned() {
                 Some(mem::replace(&mut subs[replace_index], region))
@@ -330,7 +327,7 @@ where
             size: window_size,
         });
         rectangle(
-            self.color,
+            self.background_color,
             [act.pos[0], act.pos[1], act.size[0], act.size[1]],
             transform,
             graphics,
@@ -343,9 +340,9 @@ where
             },
             _ => self.orientation,
         };
-        use self::Widget::*;
-        match self.widget {
-            SubRegion { ref subs, .. } => {
+        use self::WidgetKind::*;
+        match self.kind {
+            SubWidget { ref subs, .. } => {
                 let len = subs.len() as f64;
                 let sub_win_size = if let Orientation::Vertical = ori {
                     [
