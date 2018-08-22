@@ -15,7 +15,7 @@ fn main() {
         TextureSettings::new(),
     ).unwrap();
 
-    let ui: Widget<usize, ()> = Widget::from(vec![
+    let mut ui: Widget<usize> = Widget::from(vec![
         Widget::label("Hello there Alex!"),
         Widget::from(vec![
             Widget::label("How").with_background_color([1.0, 0.0, 0.0, 1.0]),
