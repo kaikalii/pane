@@ -154,6 +154,8 @@ pub trait Scalar:
     Add<Self, Output = Self>
     + Copy
     + From<f32>
+    + PartialEq
+    + PartialOrd
     + Sum<Self>
     + Sub<Self, Output = Self>
     + Mul<Self, Output = Self>
@@ -169,6 +171,8 @@ pub trait Scalar:
 impl<T> Scalar for T where
     T: Copy
         + From<f32>
+        + PartialEq
+        + PartialOrd
         + Add<T, Output = T>
         + Sum<T>
         + Sub<T, Output = T>
