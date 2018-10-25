@@ -153,6 +153,7 @@ impl ZeroOneTwo for f64 {
 pub trait Scalar:
     Add<Self, Output = Self>
     + Copy
+    + From<f32>
     + Sum<Self>
     + Sub<Self, Output = Self>
     + Mul<Self, Output = Self>
@@ -167,6 +168,7 @@ pub trait Scalar:
 
 impl<T> Scalar for T where
     T: Copy
+        + From<f32>
         + Add<T, Output = T>
         + Sum<T>
         + Sub<T, Output = T>
@@ -236,19 +238,19 @@ pub trait Vector2: Sized {
     }
 }
 
-impl<P, T> Vector2 for P
+impl<P> Vector2 for P
 where
-    P: Pair<Item = T>,
-    T: Scalar,
+    P: Pair,
+    P::Item: Scalar,
 {
     type Scalar = P::Item;
-    fn x(&self) -> T {
+    fn x(&self) -> P::Item {
         self.first()
     }
-    fn y(&self) -> T {
+    fn y(&self) -> P::Item {
         self.second()
     }
-    fn new(x: T, y: T) -> Self {
+    fn new(x: P::Item, y: P::Item) -> Self {
         Self::from_items(x, y)
     }
 }
@@ -285,14 +287,14 @@ pub trait Rectangle: Clone + fmt::Debug {
     }
 }
 
-impl<T, V, P> Rectangle for P
+impl<P> Rectangle for P
 where
-    P: Pair<Item = V> + Clone + fmt::Debug,
-    V: Vector2<Scalar = T> + fmt::Debug,
-    T: Scalar + fmt::Debug,
+    P: Pair + Clone + fmt::Debug,
+    P::Item: Vector2 + fmt::Debug,
+    <P::Item as Vector2>::Scalar: fmt::Debug,
 {
-    type Scalar = T;
-    type Vector = V;
+    type Scalar = <P::Item as Vector2>::Scalar;
+    type Vector = P::Item;
     fn new(top_left: Self::Vector, size: Self::Vector) -> Self {
         Self::from_items(top_left, size)
     }

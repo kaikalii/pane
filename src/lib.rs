@@ -1,5 +1,8 @@
+#[cfg(feature = "graphics")]
+extern crate graphics;
 extern crate rusttype;
 
+mod cache;
 pub mod math;
 pub mod prelude {
     pub use math::{Rectangle, Scalar, Vector2};
@@ -9,7 +12,8 @@ pub mod prelude {
 
 use std::{collections::HashMap, ops};
 
-use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
+pub use cache::*;
+pub use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Orientation {
