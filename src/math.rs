@@ -1,5 +1,76 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+pub trait Pair {
+    type Item: Copy;
+    fn first(&self) -> Self::Item;
+    fn second(&self) -> Self::Item;
+    fn from_items(a: Self::Item, b: Self::Item) -> Self;
+}
+
+impl<T> Pair for (T, T)
+where
+    T: Copy,
+{
+    type Item = T;
+    fn first(&self) -> Self::Item {
+        self.0.clone()
+    }
+    fn second(&self) -> Self::Item {
+        self.1.clone()
+    }
+    fn from_items(a: Self::Item, b: Self::Item) -> Self {
+        (a, b)
+    }
+}
+
+impl<T> Pair for [T; 2]
+where
+    T: Copy,
+{
+    type Item = T;
+    fn first(&self) -> Self::Item {
+        self[0].clone()
+    }
+    fn second(&self) -> Self::Item {
+        self[0].clone()
+    }
+    fn from_items(a: Self::Item, b: Self::Item) -> Self {
+        [a, b]
+    }
+}
+
+impl<T> Pair for (T, T, T, T)
+where
+    T: Copy,
+{
+    type Item = (T, T);
+    fn first(&self) -> Self::Item {
+        (self.0.clone(), self.1.clone())
+    }
+    fn second(&self) -> Self::Item {
+        (self.2.clone(), self.3.clone())
+    }
+    fn from_items(a: Self::Item, b: Self::Item) -> Self {
+        (a.0, a.1, b.0, b.1)
+    }
+}
+
+impl<T> Pair for [T; 4]
+where
+    T: Copy,
+{
+    type Item = [T; 2];
+    fn first(&self) -> Self::Item {
+        [self[0].clone(), self[1].clone()]
+    }
+    fn second(&self) -> Self::Item {
+        [self[2].clone(), self[3].clone()]
+    }
+    fn from_items(a: Self::Item, b: Self::Item) -> Self {
+        [a[0].clone(), a[1].clone(), b[0].clone(), b[1].clone()]
+    }
+}
+
 pub trait Sin {
     type Output;
     fn sin(&self) -> Self::Output;
@@ -62,27 +133,57 @@ pub trait OneTwo {
     const TWO: Self;
 }
 
+impl OneTwo for f32 {
+    const ONE: Self = 1.0;
+    const TWO: Self = 2.0;
+}
+
 impl OneTwo for f64 {
     const ONE: Self = 1.0;
     const TWO: Self = 2.0;
 }
 
-pub trait Vector2<T>: Clone + Sized
+pub trait Scalar:
+    Copy
+    + Add<Self, Output = Self>
+    + Sub<Self, Output = Self>
+    + Mul<Self, Output = Self>
+    + Div<Self, Output = Self>
+    + Neg<Output = Self>
+    + Sin<Output = Self>
+    + Cos<Output = Self>
+    + Pow<Self, Output = Self>
+    + OneTwo
+{
+}
+
+impl<T> Scalar for T where
+    T: Copy
+        + Add<T, Output = T>
+        + Sub<T, Output = T>
+        + Mul<T, Output = T>
+        + Div<T, Output = T>
+        + Neg<Output = T>
+        + Sin<Output = T>
+        + Cos<Output = T>
+        + Pow<T, Output = T>
+        + OneTwo
+{}
+
+pub trait Vector2<T>: Copy
 where
-    T: Copy,
-    T: Add<T, Output = T>,
-    T: Sub<T, Output = T>,
-    T: Mul<T, Output = T>,
-    T: Div<T, Output = T>,
-    T: Neg<Output = T>,
-    T: Sin<Output = T>,
-    T: Cos<Output = T>,
-    T: Pow<T, Output = T>,
-    T: OneTwo,
+    T: Scalar,
 {
     fn x(&self) -> T;
     fn y(&self) -> T;
     fn from_xy(x: T, y: T) -> Self;
+    fn map<U, V>(&self) -> V
+    where
+        U: Scalar + From<T>,
+        V: Vector2<U>,
+    {
+        V::from_xy(U::from(self.x()), U::from(self.y()))
+    }
     fn neg(self) -> Self {
         Self::from_xy(-self.x(), -self.y())
     }
@@ -122,49 +223,10 @@ where
     }
 }
 
-pub trait Pair<T: Clone> {
-    fn first(&self) -> T;
-    fn second(&self) -> T;
-    fn from_items(a: T, b: T) -> Self;
-}
-
-impl<T: Clone> Pair<T> for (T, T) {
-    fn first(&self) -> T {
-        self.0.clone()
-    }
-    fn second(&self) -> T {
-        self.1.clone()
-    }
-    fn from_items(a: T, b: T) -> Self {
-        (a, b)
-    }
-}
-
-impl<T: Clone> Pair<T> for [T; 2] {
-    fn first(&self) -> T {
-        self[0].clone()
-    }
-    fn second(&self) -> T {
-        self[0].clone()
-    }
-    fn from_items(a: T, b: T) -> Self {
-        [a, b]
-    }
-}
-
 impl<P, T> Vector2<T> for P
 where
-    P: Pair<T> + Clone,
-    T: Copy
-        + Add<T, Output = T>
-        + Sub<T, Output = T>
-        + Mul<T, Output = T>
-        + Div<T, Output = T>
-        + Neg<Output = T>
-        + Sin<Output = T>
-        + Cos<Output = T>
-        + Pow<T, Output = T>
-        + OneTwo,
+    P: Pair<Item = T> + Copy,
+    T: Scalar,
 {
     fn x(&self) -> T {
         self.first()
@@ -176,3 +238,50 @@ where
         Self::from_items(x, y)
     }
 }
+
+pub trait Rectangle<T, V>: Pair<Item = V> + Sized
+where
+    V: Pair<Item = T> + Copy,
+    T: Scalar,
+{
+    fn new(top_left: V, size: V) -> Self {
+        Self::from_items(top_left, size)
+    }
+    fn top_left(&self) -> V {
+        self.first()
+    }
+    fn top_right(&self) -> V {
+        V::from_xy(self.top_left().x() + self.size().x(), self.top_left().y())
+    }
+    fn bottom_left(&self) -> V {
+        V::from_xy(self.top_left().x(), self.top_left().y() + self.size().y())
+    }
+    fn bottom_right(&self) -> V {
+        self.top_left().add(self.size())
+    }
+    fn size(&self) -> V {
+        self.second()
+    }
+    fn width(&self) -> T {
+        self.size().x()
+    }
+    fn height(&self) -> T {
+        self.size().y()
+    }
+    fn center(&self) -> V {
+        self.top_left().add(self.size().div(T::TWO))
+    }
+    fn with_top_left(self, top_left: V) -> Self {
+        Self::from_items(top_left, self.size())
+    }
+    fn with_size(self, size: V) -> Self {
+        Self::from_items(self.top_left(), size)
+    }
+}
+
+impl<T, V, R> Rectangle<T, V> for R
+where
+    R: Pair<Item = V> + Sized,
+    V: Pair<Item = T> + Copy,
+    T: Scalar,
+{}
