@@ -1,5 +1,5 @@
 [package]
-name = "selenium"
+name = "pane"
 version = "0.1.0"
 authors = ["Kai Schmidt <kaikaliischmidt@gmail.com>"]
 
