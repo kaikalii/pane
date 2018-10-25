@@ -1,10 +1,13 @@
 extern crate rusttype;
 
 mod math;
+mod prelude {
+    pub use math::{Rectangle, Vector2};
+    pub use Orientation;
+    pub use Pane;
+}
 
 use std::{collections::HashMap, ops};
-
-pub use math::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Orientation {
