@@ -1,7 +1,7 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 pub trait Pair {
-    type Item: Copy;
+    type Item;
     fn first(&self) -> Self::Item;
     fn second(&self) -> Self::Item;
     fn from_items(a: Self::Item, b: Self::Item) -> Self;
@@ -9,7 +9,7 @@ pub trait Pair {
 
 impl<T> Pair for (T, T)
 where
-    T: Copy,
+    T: Clone,
 {
     type Item = T;
     fn first(&self) -> Self::Item {
@@ -25,7 +25,7 @@ where
 
 impl<T> Pair for [T; 2]
 where
-    T: Copy,
+    T: Clone,
 {
     type Item = T;
     fn first(&self) -> Self::Item {
@@ -41,7 +41,7 @@ where
 
 impl<T> Pair for (T, T, T, T)
 where
-    T: Copy,
+    T: Clone,
 {
     type Item = (T, T);
     fn first(&self) -> Self::Item {
@@ -57,7 +57,7 @@ where
 
 impl<T> Pair for [T; 4]
 where
-    T: Copy,
+    T: Clone,
 {
     type Item = [T; 2];
     fn first(&self) -> Self::Item {
@@ -170,52 +170,56 @@ impl<T> Scalar for T where
         + OneTwo
 {}
 
-pub trait Vector2<T>: Copy
-where
-    T: Scalar,
-{
-    fn x(&self) -> T;
-    fn y(&self) -> T;
-    fn from_xy(x: T, y: T) -> Self;
+pub trait Vector2: Sized {
+    type Scalar: Scalar;
+    fn x(&self) -> Self::Scalar;
+    fn y(&self) -> Self::Scalar;
+    fn new(x: Self::Scalar, y: Self::Scalar) -> Self;
     fn map<U, V>(&self) -> V
     where
-        U: Scalar + From<T>,
-        V: Vector2<U>,
+        U: Scalar + From<Self::Scalar>,
+        V: Vector2<Scalar = U>,
     {
-        V::from_xy(U::from(self.x()), U::from(self.y()))
+        V::new(U::from(self.x()), U::from(self.y()))
     }
     fn neg(self) -> Self {
-        Self::from_xy(-self.x(), -self.y())
+        Self::new(-self.x(), -self.y())
     }
-    fn add<V: Vector2<T>>(self, other: V) -> Self {
-        Self::from_xy(self.x() + other.x(), self.y() + other.y())
+    fn add<V: Vector2<Scalar = Self::Scalar>>(self, other: V) -> Self {
+        Self::new(self.x() + other.x(), self.y() + other.y())
     }
-    fn sub<V: Vector2<T>>(self, other: V) -> Self {
-        Self::from_xy(self.x() - other.x(), self.y() - other.y())
+    fn sub<V: Vector2<Scalar = Self::Scalar>>(self, other: V) -> Self {
+        Self::new(self.x() - other.x(), self.y() - other.y())
     }
-    fn mul(self, by: T) -> Self {
-        Self::from_xy(self.x() * by, self.y() * by)
+    fn mul(self, by: Self::Scalar) -> Self {
+        Self::new(self.x() * by, self.y() * by)
     }
-    fn mul2<V: Vector2<T>>(self, other: V) -> Self {
-        Self::from_xy(self.x() * other.x(), self.y() * other.y())
+    fn mul2<V: Vector2<Scalar = Self::Scalar>>(self, other: V) -> Self {
+        Self::new(self.x() * other.x(), self.y() * other.y())
     }
-    fn div(self, by: T) -> Self {
-        Self::from_xy(self.x() / by, self.y() / by)
+    fn div(self, by: Self::Scalar) -> Self {
+        Self::new(self.x() / by, self.y() / by)
     }
-    fn div2<V: Vector2<T>>(self, other: V) -> Self {
-        Self::from_xy(self.x() / other.x(), self.y() / other.y())
+    fn div2<V: Vector2<Scalar = Self::Scalar>>(self, other: V) -> Self {
+        Self::new(self.x() / other.x(), self.y() / other.y())
     }
-    fn dist<V: Vector2<T>>(self, to: V) -> T {
-        ((self.x() - to.x()).pow(T::TWO) + (self.y() - to.y()).pow(T::TWO)).pow(T::ONE / T::TWO)
+    fn dist<V: Vector2<Scalar = Self::Scalar>>(self, to: V) -> Self::Scalar {
+        ((self.x() - to.x()).pow(Self::Scalar::TWO) + (self.y() - to.y()).pow(Self::Scalar::TWO))
+            .pow(Self::Scalar::ONE / Self::Scalar::TWO)
     }
-    fn mag(self) -> T {
-        (self.x().pow(T::TWO) + self.y().pow(T::TWO)).pow(T::ONE / T::TWO)
+    fn mag(self) -> Self::Scalar {
+        (self.x().pow(Self::Scalar::TWO) + self.y().pow(Self::Scalar::TWO))
+            .pow(Self::Scalar::ONE / Self::Scalar::TWO)
     }
-    fn rotate_about(self, pivot: Self, angle: T) -> Self {
+    fn rotate_about<V: Vector2<Scalar = Self::Scalar> + Clone>(
+        self,
+        pivot: V,
+        angle: Self::Scalar,
+    ) -> Self {
         let sin = (-angle).sin();
         let cos = (-angle).cos();
         let origin_point = self.sub(pivot.clone());
-        let rotated_point = Self::from_xy(
+        let rotated_point = Self::new(
             origin_point.x() * cos - origin_point.y() * sin,
             origin_point.x() * sin + origin_point.y() * cos,
         );
@@ -223,65 +227,70 @@ where
     }
 }
 
-impl<P, T> Vector2<T> for P
+impl<P, T> Vector2 for P
 where
-    P: Pair<Item = T> + Copy,
+    P: Pair<Item = T>,
     T: Scalar,
 {
+    type Scalar = P::Item;
     fn x(&self) -> T {
         self.first()
     }
     fn y(&self) -> T {
         self.second()
     }
-    fn from_xy(x: T, y: T) -> Self {
+    fn new(x: T, y: T) -> Self {
         Self::from_items(x, y)
     }
 }
 
-pub trait Rectangle<T, V>: Pair<Item = V> + Sized
-where
-    V: Pair<Item = T> + Copy,
-    T: Scalar,
-{
-    fn new(top_left: V, size: V) -> Self {
-        Self::from_items(top_left, size)
+pub trait Rectangle: Sized {
+    type Scalar: Scalar;
+    type Vector: Vector2<Scalar = Self::Scalar>;
+    fn new(top_left: Self::Vector, size: Self::Vector) -> Self;
+    fn top_left(&self) -> Self::Vector;
+    fn top_right(&self) -> Self::Vector {
+        Self::Vector::new(self.top_left().x() + self.size().x(), self.top_left().y())
     }
-    fn top_left(&self) -> V {
-        self.first()
+    fn bottom_left(&self) -> Self::Vector {
+        Self::Vector::new(self.top_left().x(), self.top_left().y() + self.size().y())
     }
-    fn top_right(&self) -> V {
-        V::from_xy(self.top_left().x() + self.size().x(), self.top_left().y())
-    }
-    fn bottom_left(&self) -> V {
-        V::from_xy(self.top_left().x(), self.top_left().y() + self.size().y())
-    }
-    fn bottom_right(&self) -> V {
+    fn bottom_right(&self) -> Self::Vector {
         self.top_left().add(self.size())
     }
-    fn size(&self) -> V {
-        self.second()
-    }
-    fn width(&self) -> T {
+    fn size(&self) -> Self::Vector;
+    fn width(&self) -> Self::Scalar {
         self.size().x()
     }
-    fn height(&self) -> T {
+    fn height(&self) -> Self::Scalar {
         self.size().y()
     }
-    fn center(&self) -> V {
-        self.top_left().add(self.size().div(T::TWO))
+    fn center(&self) -> Self::Vector {
+        self.top_left().add(self.size().div(Self::Scalar::TWO))
     }
-    fn with_top_left(self, top_left: V) -> Self {
-        Self::from_items(top_left, self.size())
+    fn with_top_left(self, top_left: Self::Vector) -> Self {
+        Self::new(top_left, self.size())
     }
-    fn with_size(self, size: V) -> Self {
-        Self::from_items(self.top_left(), size)
+    fn with_size(self, size: Self::Vector) -> Self {
+        Self::new(self.top_left(), size)
     }
 }
 
-impl<T, V, R> Rectangle<T, V> for R
+impl<T, V, P> Rectangle for P
 where
-    R: Pair<Item = V> + Sized,
-    V: Pair<Item = T> + Copy,
+    P: Pair<Item = V> + Sized,
+    V: Vector2<Scalar = T>,
     T: Scalar,
-{}
+{
+    type Scalar = T;
+    type Vector = V;
+    fn new(top_left: Self::Vector, size: Self::Vector) -> Self {
+        Self::from_items(top_left, size)
+    }
+    fn top_left(&self) -> Self::Vector {
+        self.first()
+    }
+    fn size(&self) -> Self::Vector {
+        self.second()
+    }
+}
