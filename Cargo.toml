@@ -3,14 +3,5 @@ name = "selenium"
 version = "0.1.0"
 authors = ["Kai Schmidt <kaikaliischmidt@gmail.com>"]
 
-[features]
-default = ["piston"]
-piston = ["piston_window"]
-
 [dependencies]
-piston2d-graphics = "*"
-piston_window = { version = "*", optional = true }
-
-[[example]]
-name = "simple"
-required-features = ["piston"]
+rusttype = "*"
