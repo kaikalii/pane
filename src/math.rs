@@ -86,25 +86,25 @@ where
     fn neg(self) -> Self {
         Self::from_xy(-self.x(), -self.y())
     }
-    fn add(self, other: Self) -> Self {
+    fn add<V: Vector2<T>>(self, other: V) -> Self {
         Self::from_xy(self.x() + other.x(), self.y() + other.y())
     }
-    fn sub(self, other: Self) -> Self {
+    fn sub<V: Vector2<T>>(self, other: V) -> Self {
         Self::from_xy(self.x() - other.x(), self.y() - other.y())
     }
     fn mul(self, by: T) -> Self {
         Self::from_xy(self.x() * by, self.y() * by)
     }
-    fn mul2(self, other: Self) -> Self {
+    fn mul2<V: Vector2<T>>(self, other: V) -> Self {
         Self::from_xy(self.x() * other.x(), self.y() * other.y())
     }
     fn div(self, by: T) -> Self {
         Self::from_xy(self.x() / by, self.y() / by)
     }
-    fn div2(self, other: Self) -> Self {
+    fn div2<V: Vector2<T>>(self, other: V) -> Self {
         Self::from_xy(self.x() / other.x(), self.y() / other.y())
     }
-    fn dist(self, to: Self) -> T {
+    fn dist<V: Vector2<T>>(self, to: V) -> T {
         ((self.x() - to.x()).pow(T::TWO) + (self.y() - to.y()).pow(T::TWO)).pow(T::ONE / T::TWO)
     }
     fn mag(self) -> T {
@@ -122,50 +122,57 @@ where
     }
 }
 
-impl<T> Vector2<T> for [T; 2]
-where
-    T: Copy,
-    T: Add<T, Output = T>,
-    T: Sub<T, Output = T>,
-    T: Mul<T, Output = T>,
-    T: Div<T, Output = T>,
-    T: Neg<Output = T>,
-    T: Sin<Output = T>,
-    T: Cos<Output = T>,
-    T: Pow<T, Output = T>,
-    T: OneTwo,
-{
-    fn x(&self) -> T {
-        self[0]
+pub trait Pair<T: Clone> {
+    fn first(&self) -> T;
+    fn second(&self) -> T;
+    fn from_items(a: T, b: T) -> Self;
+}
+
+impl<T: Clone> Pair<T> for (T, T) {
+    fn first(&self) -> T {
+        self.0.clone()
     }
-    fn y(&self) -> T {
-        self[1]
+    fn second(&self) -> T {
+        self.1.clone()
     }
-    fn from_xy(x: T, y: T) -> Self {
-        [x, y]
+    fn from_items(a: T, b: T) -> Self {
+        (a, b)
     }
 }
 
-impl<T> Vector2<T> for (T, T)
+impl<T: Clone> Pair<T> for [T; 2] {
+    fn first(&self) -> T {
+        self[0].clone()
+    }
+    fn second(&self) -> T {
+        self[0].clone()
+    }
+    fn from_items(a: T, b: T) -> Self {
+        [a, b]
+    }
+}
+
+impl<P, T> Vector2<T> for P
 where
-    T: Copy,
-    T: Add<T, Output = T>,
-    T: Sub<T, Output = T>,
-    T: Mul<T, Output = T>,
-    T: Div<T, Output = T>,
-    T: Neg<Output = T>,
-    T: Sin<Output = T>,
-    T: Cos<Output = T>,
-    T: Pow<T, Output = T>,
-    T: OneTwo,
+    P: Pair<T> + Clone,
+    T: Copy
+        + Add<T, Output = T>
+        + Sub<T, Output = T>
+        + Mul<T, Output = T>
+        + Div<T, Output = T>
+        + Neg<Output = T>
+        + Sin<Output = T>
+        + Cos<Output = T>
+        + Pow<T, Output = T>
+        + OneTwo,
 {
     fn x(&self) -> T {
-        self.0
+        self.first()
     }
     fn y(&self) -> T {
-        self.1
+        self.second()
     }
     fn from_xy(x: T, y: T) -> Self {
-        (x, y)
+        Self::from_items(x, y)
     }
 }
