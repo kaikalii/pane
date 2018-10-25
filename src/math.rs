@@ -1,4 +1,8 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::{
+    fmt,
+    iter::Sum,
+    ops::{Add, Div, Mul, Neg, Sub},
+};
 
 pub trait Pair {
     type Item;
@@ -32,7 +36,7 @@ where
         self[0].clone()
     }
     fn second(&self) -> Self::Item {
-        self[0].clone()
+        self[1].clone()
     }
     fn from_items(a: Self::Item, b: Self::Item) -> Self {
         [a, b]
@@ -128,24 +132,28 @@ impl Pow<Self> for f64 {
     }
 }
 
-pub trait OneTwo {
+pub trait ZeroOneTwo {
+    const ZERO: Self;
     const ONE: Self;
     const TWO: Self;
 }
 
-impl OneTwo for f32 {
+impl ZeroOneTwo for f32 {
+    const ZERO: Self = 0.0;
     const ONE: Self = 1.0;
     const TWO: Self = 2.0;
 }
 
-impl OneTwo for f64 {
+impl ZeroOneTwo for f64 {
+    const ZERO: Self = 0.0;
     const ONE: Self = 1.0;
     const TWO: Self = 2.0;
 }
 
 pub trait Scalar:
-    Copy
-    + Add<Self, Output = Self>
+    Add<Self, Output = Self>
+    + Copy
+    + Sum<Self>
     + Sub<Self, Output = Self>
     + Mul<Self, Output = Self>
     + Div<Self, Output = Self>
@@ -153,13 +161,14 @@ pub trait Scalar:
     + Sin<Output = Self>
     + Cos<Output = Self>
     + Pow<Self, Output = Self>
-    + OneTwo
+    + ZeroOneTwo
 {
 }
 
 impl<T> Scalar for T where
     T: Copy
         + Add<T, Output = T>
+        + Sum<T>
         + Sub<T, Output = T>
         + Mul<T, Output = T>
         + Div<T, Output = T>
@@ -167,7 +176,7 @@ impl<T> Scalar for T where
         + Sin<Output = T>
         + Cos<Output = T>
         + Pow<T, Output = T>
-        + OneTwo
+        + ZeroOneTwo
 {}
 
 pub trait Vector2: Sized {
@@ -244,9 +253,9 @@ where
     }
 }
 
-pub trait Rectangle: Sized {
-    type Scalar: Scalar;
-    type Vector: Vector2<Scalar = Self::Scalar>;
+pub trait Rectangle: Clone + fmt::Debug {
+    type Scalar: Scalar + fmt::Debug;
+    type Vector: Vector2<Scalar = Self::Scalar> + fmt::Debug;
     fn new(top_left: Self::Vector, size: Self::Vector) -> Self;
     fn top_left(&self) -> Self::Vector;
     fn top_right(&self) -> Self::Vector {
@@ -278,9 +287,9 @@ pub trait Rectangle: Sized {
 
 impl<T, V, P> Rectangle for P
 where
-    P: Pair<Item = V> + Sized,
-    V: Vector2<Scalar = T>,
-    T: Scalar,
+    P: Pair<Item = V> + Clone + fmt::Debug,
+    V: Vector2<Scalar = T> + fmt::Debug,
+    T: Scalar + fmt::Debug,
 {
     type Scalar = T;
     type Vector = V;

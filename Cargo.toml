@@ -5,3 +5,6 @@ authors = ["Kai Schmidt <kaikaliischmidt@gmail.com>"]
 
 [dependencies]
 rusttype = "*"
+
+[[example]]
+name = "simple"
