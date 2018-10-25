@@ -1,7 +1,7 @@
 extern crate rusttype;
 
-mod math;
-mod prelude {
+pub mod math;
+pub mod prelude {
     pub use math::{Rectangle, Vector2};
     pub use Orientation;
     pub use Pane;
