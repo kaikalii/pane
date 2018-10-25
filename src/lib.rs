@@ -56,18 +56,6 @@ impl Pane {
         self.names = new_names;
         self
     }
-    pub fn map<F>(mut self, index: usize, f: F) -> Self
-    where
-        F: Fn(Pane) -> Pane,
-    {
-        self.inner_panes = self
-            .inner_panes
-            .into_iter()
-            .enumerate()
-            .map(|(i, (w, pane))| (w, if i == index { f(pane) } else { pane }))
-            .collect();
-        self
-    }
     pub fn orientation(&self) -> Orientation {
         self.orientation
     }
@@ -129,5 +117,47 @@ impl ops::Index<usize> for Pane {
     type Output = Pane;
     fn index(&self, index: usize) -> &Self::Output {
         &self.inner_panes[index].1
+    }
+}
+
+impl<'a> ops::Index<&'a str> for Pane {
+    type Output = Pane;
+    fn index(&self, index: &'a str) -> &Self::Output {
+        let index = self.names[index];
+        &self[index]
+    }
+}
+
+pub trait Map<I> {
+    type Accessed;
+    fn map<F>(self, index: I, f: F) -> Self
+    where
+        F: Fn(Self::Accessed) -> Self::Accessed;
+}
+
+impl Map<usize> for Pane {
+    type Accessed = Pane;
+    fn map<F>(mut self, index: usize, f: F) -> Self
+    where
+        F: Fn(Self::Accessed) -> Self::Accessed,
+    {
+        self.inner_panes = self
+            .inner_panes
+            .into_iter()
+            .enumerate()
+            .map(|(i, (w, pane))| (w, if i == index { f(pane) } else { pane }))
+            .collect();
+        self
+    }
+}
+
+impl<'a> Map<&'a str> for Pane {
+    type Accessed = Pane;
+    fn map<F>(self, index: &'a str, f: F) -> Self
+    where
+        F: Fn(Self::Accessed) -> Self::Accessed,
+    {
+        let index = self.names[index];
+        self.map(index, f)
     }
 }
