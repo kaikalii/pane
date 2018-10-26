@@ -40,7 +40,7 @@ where
         TextFormat {
             font_size,
             just: Justification::Left,
-            line_spacing: 1.2.into(),
+            line_spacing: S::ONE,
             first_line_indent: 0,
             lines_indent: 0,
             color: [1.0; 4],
