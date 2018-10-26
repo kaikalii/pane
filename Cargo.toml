@@ -1,6 +1,9 @@
 [[example]]
 name = 'simple'
 
+[[example]]
+name = 'image'
+
 [dependencies]
 rusttype = '0.7.2'
 
@@ -8,8 +11,14 @@ rusttype = '0.7.2'
 optional = true
 version = '0.26.0'
 
+[dependencies.graphics_buffer]
+optional = true
+version = '*'
+
 [features]
+default = ['graphics']
 graphics = ['piston2d-graphics']
+buffer = ['graphics_buffer']
 
 [package]
 authors = ['Kai Schmidt <kaikaliischmidt@gmail.com>']

@@ -1,12 +1,16 @@
 #[cfg(feature = "graphics")]
 extern crate graphics;
+#[cfg(feature = "buffer")]
+extern crate graphics_buffer;
 extern crate rusttype;
 
 pub mod math;
 mod text;
 pub mod prelude {
     pub use math::{Rectangle, Scalar, Vector2};
-    pub use text::{CharacterWidthCache, Glyphs, Justification};
+    #[cfg(feature = "graphics")]
+    pub use text::justified_text;
+    pub use text::{CharacterWidthCache, Glyphs, Justification, TextFormat};
     pub use Orientation;
     pub use Pane;
 }

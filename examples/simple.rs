@@ -20,10 +20,8 @@ fn main() {
     let mut glyphs: Glyphs = Glyphs::from_bytes(ROBOTO).unwrap();
     let lines = glyphs.justify_text(
         "Nice weather we are having, isn't it?\nIt's such a beautiful day.",
-        20,
         [0.0, 0.0, 120.0, 120.0],
-        Justification::Center,
-        1.2,
+        TextFormat::new(20),
     );
     for ([x, y], line) in lines {
         println!("[{:.03}, {:.03}]: {}", x, y, line);
