@@ -13,7 +13,7 @@ optional = true
 version = '*'
 
 [features]
-default = ['graphics']
+default = ['graphics', 'buffer']
 graphics = ['piston2d-graphics']
 buffer = ['graphics_buffer']
 

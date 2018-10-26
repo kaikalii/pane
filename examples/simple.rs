@@ -11,38 +11,26 @@ static MESSAGE1: &'static str =
 
 static MESSAGE2: &'static str = "She was lookin' kinda dumb with her finger and her thumb";
 
-static MESSAGE3: &'static str = "in the shape of a 'L' on her forehead.";
+static MESSAGE3: &'static str = "in the shape of an 'L' on her forehead.";
 
 fn main() {
     let mut glyphs = BufferGlyphs::from_bytes(ROBOTO).unwrap();
-    let format = TextFormat::new(100);
+    let format = TextFormat::new(50);
     let pane = Pane::new()
-        .with_rect([0.0, 0.0, 500.0, 500.0])
+        .with_rect([0.0, 0.0, 400.0, 400.0])
         .with_orientation(Orientation::Horizontal)
         .with_panes(vec![
-            (
-                1.0,
+            Pane::new()
+                .with_contents(Contents::Text(MESSAGE1.to_string(), format))
+                .with_margin(5.0),
+            Pane::new().with_panes(vec![
                 Pane::new()
-                    .with_contents(Contents::Text(MESSAGE1.to_string(), format))
+                    .with_contents(Contents::Text(MESSAGE2.to_string(), format.right()))
                     .with_margin(5.0),
-            ),
-            (
-                1.0,
-                Pane::new().with_panes(vec![
-                    (
-                        1.0,
-                        Pane::new()
-                            .with_contents(Contents::Text(MESSAGE2.to_string(), format.right()))
-                            .with_margin(5.0),
-                    ),
-                    (
-                        1.0,
-                        Pane::new()
-                            .with_contents(Contents::Text(MESSAGE3.to_string(), format.centered()))
-                            .with_margin(5.0),
-                    ),
-                ]),
-            ),
+                Pane::new()
+                    .with_contents(Contents::Text(MESSAGE3.to_string(), format.centered()))
+                    .with_margin(5.0),
+            ]),
         ]).with_margin(10.0)
         .fit_text(&mut glyphs);
     let mut buffer = RenderBuffer::new(pane.rect().width() as u32, pane.rect().height() as u32);

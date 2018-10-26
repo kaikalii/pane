@@ -42,7 +42,7 @@ impl Default for Orientation {
 }
 
 impl Orientation {
-    fn split_rect<R, W>(&self, rect: R, weights: W) -> Vec<R>
+    fn split_rect<R, W>(&self, margin: R::Scalar, rect: R, weights: W) -> Vec<R>
     where
         R: Rectangle,
         W: IntoIterator<Item = R::Scalar>,
@@ -52,6 +52,7 @@ impl Orientation {
             .iter()
             .cloned()
             .fold(R::Scalar::ZERO, std::ops::Add::add);
+        let margin_fraction: R::Scalar = margin / (weights.len() as u32).into();
         match self {
             Orientation::Horizontal => {
                 let mut offset = rect.top_left().x();
@@ -59,8 +60,9 @@ impl Orientation {
                     .into_iter()
                     .map(|w| {
                         let top_left = R::Vector::new(offset, rect.top_left().y());
-                        let size = R::Vector::new(rect.width() * w / sum, rect.height());
-                        offset = offset + size.x();
+                        let size =
+                            R::Vector::new(rect.width() * w / sum - margin_fraction, rect.height());
+                        offset = offset + size.x() + margin;
                         R::new(top_left, size)
                     }).collect()
             }
@@ -70,8 +72,9 @@ impl Orientation {
                     .into_iter()
                     .map(|w| {
                         let top_left = R::Vector::new(rect.top_left().x(), offset);
-                        let size = R::Vector::new(rect.width(), rect.height() * w / sum);
-                        offset = offset + size.y();
+                        let size =
+                            R::Vector::new(rect.width(), rect.height() * w / sum - margin_fraction);
+                        offset = offset + size.y() + margin;
                         R::new(top_left, size)
                     }).collect()
             }
@@ -153,24 +156,20 @@ where
         self.update_rects();
         self
     }
-    pub fn with_panes<P>(mut self, weights_and_panes: P) -> Self
+    pub fn with_panes<'a, P, I>(mut self, panes: I) -> Self
     where
-        P: IntoIterator<Item = (R::Scalar, Pane<R>)>,
-    {
-        self.inner_panes = weights_and_panes.into_iter().collect();
-        self.update_rects();
-        self
-    }
-    pub fn with_named_panes<'a, P>(mut self, weights: P) -> Self
-    where
-        P: IntoIterator<Item = (&'a str, R::Scalar, Pane<R>)>,
+        P: NamedWeightedPane<'a, R>,
+        I: IntoIterator<Item = P>,
     {
         let mut new_names = HashMap::new();
-        self.inner_panes = weights
+        self.inner_panes = panes
             .into_iter()
+            .map(NamedWeightedPane::named_weighted_pane)
             .enumerate()
             .map(|(i, (name, weight, pane))| {
-                new_names.insert(name.to_string(), i);
+                if let Some(name) = name {
+                    new_names.insert(name.to_string(), i);
+                }
                 (weight, pane)
             }).collect();
         self.names = new_names;
@@ -205,9 +204,11 @@ where
     }
     fn update_rects(&mut self) {
         let margin_rect = self.margin_rect();
-        let new_rects = self
-            .orientation
-            .split_rect(margin_rect, self.inner_panes.iter().map(|(w, _)| *w));
+        let new_rects = self.orientation.split_rect(
+            self.margin,
+            margin_rect,
+            self.inner_panes.iter().map(|(w, _)| *w),
+        );
         for (pane, rect) in self.inner_panes.iter_mut().zip(new_rects) {
             pane.1.rect = rect;
             pane.1.update_rects();
@@ -226,60 +227,6 @@ where
             .into_iter()
             .map(|(w, pane)| (w, pane.fit_text(glyphs)))
             .collect();
-        self
-    }
-    pub fn split_in_half(mut self) -> Self {
-        self.inner_panes = vec![(R::Scalar::ONE, Pane::new()); 2];
-        self.names.clear();
-        self.update_rects();
-        self
-    }
-    pub fn split_in_half_named(mut self, name1: &str, name2: &str) -> Self {
-        self.inner_panes = vec![(R::Scalar::ONE, Pane::new()); 2];
-        self.names.clear();
-        self.names.insert(name1.to_string(), 0);
-        self.names.insert(name2.to_string(), 1);
-        self.update_rects();
-        self
-    }
-    pub fn split_in_three(mut self) -> Self {
-        self.inner_panes = vec![(R::Scalar::ONE, Pane::new()); 3];
-        self.names.clear();
-        self.update_rects();
-        self
-    }
-    pub fn split_in_three_named(mut self, name1: &str, name2: &str, name3: &str) -> Self {
-        self.inner_panes = vec![(R::Scalar::ONE, Pane::new()); 3];
-        self.names.clear();
-        self.names.insert(name1.to_string(), 0);
-        self.names.insert(name2.to_string(), 1);
-        self.names.insert(name3.to_string(), 2);
-        self.update_rects();
-        self
-    }
-    pub fn split_weighted<W>(mut self, weights: W) -> Self
-    where
-        W: IntoIterator<Item = R::Scalar>,
-    {
-        self.inner_panes = weights.into_iter().map(|w| (w, Pane::new())).collect();
-        self.names.clear();
-        self.update_rects();
-        self
-    }
-    pub fn split_weighted_named<'a, W>(mut self, weights: W) -> Self
-    where
-        W: IntoIterator<Item = (&'a str, R::Scalar)>,
-    {
-        let mut new_names = HashMap::new();
-        self.inner_panes = weights
-            .into_iter()
-            .enumerate()
-            .map(|(i, (name, weight))| {
-                new_names.insert(name.to_string(), i);
-                (weight, Pane::new())
-            }).collect();
-        self.names = new_names;
-        self.update_rects();
         self
     }
 }
@@ -342,5 +289,57 @@ where
     {
         let index = self.names[index];
         self.map(index, f)
+    }
+}
+
+pub trait NamedWeightedPane<'a, R>
+where
+    R: Rectangle,
+{
+    fn named_weighted_pane(self) -> (Option<&'a str>, R::Scalar, Pane<R>);
+}
+
+impl<'a, R> NamedWeightedPane<'a, R> for Pane<R>
+where
+    R: Rectangle,
+{
+    fn named_weighted_pane(self) -> (Option<&'a str>, R::Scalar, Pane<R>) {
+        (None, R::Scalar::ONE, self)
+    }
+}
+
+impl<'a, R> NamedWeightedPane<'a, R> for (R::Scalar, Pane<R>)
+where
+    R: Rectangle,
+{
+    fn named_weighted_pane(self) -> (Option<&'a str>, R::Scalar, Pane<R>) {
+        (None, self.0, self.1)
+    }
+}
+
+impl<'a, R> NamedWeightedPane<'a, R> for (Option<&'a str>, R::Scalar, Pane<R>)
+where
+    R: Rectangle,
+{
+    fn named_weighted_pane(self) -> (Option<&'a str>, R::Scalar, Pane<R>) {
+        self
+    }
+}
+
+impl<'a, R> NamedWeightedPane<'a, R> for (&'a str, R::Scalar, Pane<R>)
+where
+    R: Rectangle,
+{
+    fn named_weighted_pane(self) -> (Option<&'a str>, R::Scalar, Pane<R>) {
+        (Some(self.0), self.1, self.2)
+    }
+}
+
+impl<'a, R> NamedWeightedPane<'a, R> for &'a str
+where
+    R: Rectangle,
+{
+    fn named_weighted_pane(self) -> (Option<&'a str>, R::Scalar, Pane<R>) {
+        (Some(self), R::Scalar::ONE, Pane::new())
     }
 }
