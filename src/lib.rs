@@ -91,6 +91,13 @@ where
             ),
         }
     }
+    pub fn rect(&self) -> R {
+        self.rect.clone()
+    }
+    pub fn with_rect(mut self, rect: R) -> Self {
+        self.rect = rect;
+        self
+    }
     pub fn size(&self) -> R::Vector {
         self.rect.size()
     }

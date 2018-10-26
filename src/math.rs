@@ -1,5 +1,4 @@
 use std::{
-    fmt,
     iter::Sum,
     ops::{Add, Div, Mul, Neg, Sub},
 };
@@ -154,6 +153,7 @@ pub trait Scalar:
     Add<Self, Output = Self>
     + Copy
     + From<f32>
+    + From<u32>
     + PartialEq
     + PartialOrd
     + Sum<Self>
@@ -171,6 +171,7 @@ pub trait Scalar:
 impl<T> Scalar for T where
     T: Copy
         + From<f32>
+        + From<u32>
         + PartialEq
         + PartialOrd
         + Add<T, Output = T>
@@ -259,9 +260,9 @@ where
     }
 }
 
-pub trait Rectangle: Clone + fmt::Debug {
-    type Scalar: Scalar + fmt::Debug;
-    type Vector: Vector2<Scalar = Self::Scalar> + fmt::Debug;
+pub trait Rectangle: Clone {
+    type Scalar: Scalar;
+    type Vector: Vector2<Scalar = Self::Scalar>;
     fn new(top_left: Self::Vector, size: Self::Vector) -> Self;
     fn top_left(&self) -> Self::Vector;
     fn top_right(&self) -> Self::Vector {
@@ -293,9 +294,8 @@ pub trait Rectangle: Clone + fmt::Debug {
 
 impl<P> Rectangle for P
 where
-    P: Pair + Clone + fmt::Debug,
-    P::Item: Vector2 + fmt::Debug,
-    <P::Item as Vector2>::Scalar: fmt::Debug,
+    P: Pair + Clone,
+    P::Item: Vector2,
 {
     type Scalar = <P::Item as Vector2>::Scalar;
     type Vector = P::Item;

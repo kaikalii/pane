@@ -4,7 +4,7 @@ use std::fmt;
 
 use rusttype::{Error, Font, GlyphId, Scale};
 
-use math::{Rectangle, Scalar, ZeroOneTwo};
+use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
 
 pub enum Justification {
     Left,
@@ -12,7 +12,7 @@ pub enum Justification {
     Right,
 }
 
-pub type PositionedChars<V> = Vec<(V, char)>;
+pub type PositionedLines<V> = Vec<(V, String)>;
 
 pub trait TextBox: Rectangle {}
 
@@ -53,6 +53,34 @@ pub trait CharacterWidthCache {
             }
         }
         sized_lines
+    }
+    fn justify_text<R>(
+        &mut self,
+        text: &str,
+        font_size: u32,
+        rect: R,
+        just: Justification,
+        line_spacing: Self::Scalar,
+    ) -> PositionedLines<R::Vector>
+    where
+        R: Rectangle<Scalar = Self::Scalar>,
+    {
+        self.max_width_lines(text, font_size, rect.width())
+            .into_iter()
+            .enumerate()
+            .map(|(i, line)| {
+                let y_offset = rect.top_left().y()
+                    + font_size.into()
+                    + Self::Scalar::from(i as u32) * font_size.into() * line_spacing;
+                use self::Justification::*;
+                let line_width = self.width(&line, font_size);
+                let x_offset = match just {
+                    Left => rect.top_left().x(),
+                    Center => rect.center().x() - line_width / Self::Scalar::TWO,
+                    Right => rect.top_right().x() - line_width,
+                };
+                (R::Vector::new(x_offset, y_offset), line)
+            }).collect()
     }
 }
 
