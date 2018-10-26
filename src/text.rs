@@ -19,6 +19,13 @@ pub enum Justification {
 
 pub type PositionedLines<V> = Vec<(V, String)>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Resize {
+    NoLarger,
+    Max,
+    None,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct TextFormat<S>
 where
@@ -30,6 +37,7 @@ where
     pub first_line_indent: usize,
     pub lines_indent: usize,
     pub color: [f32; 4],
+    pub resize: Resize,
 }
 
 impl<S> TextFormat<S>
@@ -44,6 +52,7 @@ where
             first_line_indent: 0,
             lines_indent: 0,
             color: [1.0; 4],
+            resize: Resize::NoLarger,
         }
     }
     pub fn left(mut self) -> Self {
@@ -76,6 +85,18 @@ where
     }
     pub fn color(mut self, color: [f32; 4]) -> Self {
         self.color = color;
+        self
+    }
+    pub fn resize(mut self, resize: Resize) -> Self {
+        self.resize = resize;
+        self
+    }
+    pub fn resize_font(mut self, max_size: u32) -> Self {
+        match self.resize {
+            Resize::NoLarger => self.font_size = self.font_size.min(max_size),
+            Resize::Max => self.font_size = max_size,
+            Resize::None => (),
+        }
         self
     }
 }

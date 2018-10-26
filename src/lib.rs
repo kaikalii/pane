@@ -220,7 +220,7 @@ where
     {
         let margin_rect = self.margin_rect();
         if let Some(Contents::Text(ref text, ref mut format)) = self.contents {
-            format.font_size = glyphs.fit_max_font_size(text, margin_rect, *format);
+            *format = format.resize_font(glyphs.fit_max_font_size(text, margin_rect, *format));
         }
         self.inner_panes = self
             .inner_panes
