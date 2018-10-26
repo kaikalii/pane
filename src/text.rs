@@ -1,10 +1,10 @@
+use std::collections::HashMap;
 #[cfg(feature = "graphics")]
 use std::fmt;
-use std::{collections::HashMap, iter};
 
 use rusttype::{Error, Font, GlyphId, Scale};
 
-use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
+use math::{Rectangle, Scalar, ZeroOneTwo};
 
 pub enum Justification {
     Left,
@@ -36,19 +36,20 @@ pub trait CharacterWidthCache {
             let mut sized_line = String::new();
             for word in line.split_whitespace() {
                 let width = self.width(word, font_size);
-                if curr_width + width < max_width || curr_width == Self::Scalar::ZERO {
-                    sized_line.push_str(word);
-                    sized_line.push(' ');
-                    curr_width = curr_width + width + self.char_width(' ', font_size);
-                } else {
+                if !(curr_width + width < max_width || curr_width == Self::Scalar::ZERO) {
                     curr_width = Self::Scalar::ZERO;
                     sized_line.pop();
-                    sized_lines.push(sized_line);
+                    if !sized_line.is_empty() {
+                        sized_lines.push(sized_line);
+                    }
                     sized_line = String::new();
-                    sized_line.push_str(word);
-                    sized_line.push(' ');
-                    curr_width = curr_width + width + self.char_width(' ', font_size);
                 }
+                sized_line.push_str(word);
+                sized_line.push(' ');
+                curr_width = curr_width + width + self.char_width(' ', font_size);
+            }
+            if !sized_line.is_empty() {
+                sized_lines.push(sized_line);
             }
         }
         sized_lines
@@ -56,7 +57,7 @@ pub trait CharacterWidthCache {
 }
 
 #[derive(Clone)]
-pub struct Glyphs<'f, S>
+pub struct Glyphs<'f, S = f64>
 where
     S: Scalar,
 {

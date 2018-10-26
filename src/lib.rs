@@ -6,6 +6,7 @@ pub mod math;
 mod text;
 pub mod prelude {
     pub use math::{Rectangle, Scalar, Vector2};
+    pub use text::{CharacterWidthCache, Glyphs, Justification};
     pub use Orientation;
     pub use Pane;
 }
