@@ -6,19 +6,76 @@ use pane::prelude::*;
 
 static ROBOTO: &'static [u8] = include_bytes!("roboto.ttf");
 
-static MESSAGE: &'static str = "Nice weather we are having, isn't it? \
-                                It's such a beautiful day. \
-                                The air is so fresh and the temperature is just right. \
-                                This line would not normally fit.";
+static MESSAGE1: &'static str =
+    "Somebody once told me the world is gonna role me. I ain't the sharpest tool in the shed.";
+
+static MESSAGE2: &'static str = "She was lookin' kinda dumb with her finger and her thumb";
+
+static MESSAGE3: &'static str = "in the shape of a 'L' on her forehead.";
 
 fn main() {
     let mut glyphs = BufferGlyphs::from_bytes(ROBOTO).unwrap();
-    let mut rect = [0.0, 0.0, 250.0, 200.0];
-    let mut format = TextFormat::new(30);
-    rect[2] = glyphs.fit_min_width(MESSAGE, rect, format, 1.0);
-    // format.font_size = glyphs.fit_max_font_size(MESSAGE, rect, format);
-    let mut buffer = RenderBuffer::new(rect[2] as u32, rect[3] as u32);
+    let format = TextFormat::new(100);
+    let pane = Pane::new()
+        .with_rect([0.0, 0.0, 500.0, 500.0])
+        .with_orientation(Orientation::Horizontal)
+        .with_panes(vec![
+            (
+                1.0,
+                Pane::new()
+                    .with_contents(Contents::Text(MESSAGE1.to_string(), format))
+                    .with_margin(5.0),
+            ),
+            (
+                1.0,
+                Pane::new().with_panes(vec![
+                    (
+                        1.0,
+                        Pane::new()
+                            .with_contents(Contents::Text(MESSAGE2.to_string(), format.right()))
+                            .with_margin(5.0),
+                    ),
+                    (
+                        1.0,
+                        Pane::new()
+                            .with_contents(Contents::Text(MESSAGE3.to_string(), format.centered()))
+                            .with_margin(5.0),
+                    ),
+                ]),
+            ),
+        ]).with_margin(10.0)
+        .fit_text(&mut glyphs);
+    let mut buffer = RenderBuffer::new(pane.rect().width() as u32, pane.rect().height() as u32);
     buffer.clear([0.0, 0.0, 0.0, 1.0]);
-    justified_text(MESSAGE, rect, format, &mut glyphs, identity(), &mut buffer).unwrap();
+    if let Some(Contents::Text(text, format)) = pane[0].contents() {
+        justified_text(
+            text,
+            pane[0].rect(),
+            *format,
+            &mut glyphs,
+            identity(),
+            &mut buffer,
+        ).unwrap();
+    }
+    if let Some(Contents::Text(text, format)) = pane[1][0].contents() {
+        justified_text(
+            text,
+            pane[1][0].rect(),
+            *format,
+            &mut glyphs,
+            identity(),
+            &mut buffer,
+        ).unwrap();
+    }
+    if let Some(Contents::Text(text, format)) = pane[1][1].contents() {
+        justified_text(
+            text,
+            pane[1][1].rect(),
+            *format,
+            &mut glyphs,
+            identity(),
+            &mut buffer,
+        ).unwrap();
+    }
     buffer.save("simple.png").unwrap();
 }

@@ -11,6 +11,7 @@ pub mod prelude {
     #[cfg(feature = "graphics")]
     pub use text::justified_text;
     pub use text::{CharacterWidthCache, Glyphs, Justification, TextFormat};
+    pub use Contents;
     pub use Orientation;
     pub use Pane;
 }
@@ -19,6 +20,14 @@ use std::{collections::HashMap, ops};
 
 pub use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
 pub use text::*;
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum Contents<S>
+where
+    S: Scalar,
+{
+    Text(String, TextFormat<S>),
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Orientation {
@@ -75,6 +84,7 @@ pub struct Pane<R = [f64; 4]>
 where
     R: Rectangle,
 {
+    contents: Option<Contents<R::Scalar>>,
     orientation: Orientation,
     margin: R::Scalar,
     names: HashMap<String, usize>,
@@ -88,6 +98,7 @@ where
 {
     pub fn new() -> Self {
         Pane {
+            contents: None,
             orientation: Orientation::default(),
             margin: R::Scalar::ZERO,
             names: HashMap::new(),
@@ -97,6 +108,17 @@ where
                 R::Vector::new(R::Scalar::ONE, R::Scalar::ONE),
             ),
         }
+    }
+    pub fn contents(&self) -> Option<&Contents<R::Scalar>> {
+        self.contents.as_ref()
+    }
+    pub fn with_contents(mut self, contents: Contents<R::Scalar>) -> Self {
+        self.contents = Some(contents);
+        self
+    }
+    pub fn with_no_contents(mut self) -> Self {
+        self.contents = None;
+        self
     }
     pub fn rect(&self) -> R {
         self.rect.clone()
@@ -190,6 +212,21 @@ where
             pane.1.rect = rect;
             pane.1.update_rects();
         }
+    }
+    pub fn fit_text<C>(mut self, glyphs: &mut C) -> Self
+    where
+        C: CharacterWidthCache<Scalar = R::Scalar>,
+    {
+        let margin_rect = self.margin_rect();
+        if let Some(Contents::Text(ref text, ref mut format)) = self.contents {
+            format.font_size = glyphs.fit_max_font_size(text, margin_rect, *format);
+        }
+        self.inner_panes = self
+            .inner_panes
+            .into_iter()
+            .map(|(w, pane)| (w, pane.fit_text(glyphs)))
+            .collect();
+        self
     }
     pub fn split_in_half(mut self) -> Self {
         self.inner_panes = vec![(R::Scalar::ONE, Pane::new()); 2];

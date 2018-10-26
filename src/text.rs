@@ -185,19 +185,40 @@ pub trait CharacterWidthCache {
                 (R::Vector::new(x_offset, y_offset), line)
             }).collect()
     }
+    fn text_fits_horizontal<R>(
+        &mut self,
+        text: &str,
+        rect: R,
+        format: TextFormat<Self::Scalar>,
+    ) -> bool
+    where
+        R: Rectangle<Scalar = Self::Scalar>,
+    {
+        self.max_line_width(text, rect.width(), format) < rect.width()
+    }
+    fn text_fits_vertical<R>(
+        &mut self,
+        text: &str,
+        rect: R,
+        format: TextFormat<Self::Scalar>,
+    ) -> bool
+    where
+        R: Rectangle<Scalar = Self::Scalar>,
+    {
+        let lines = self.format_lines(text, rect.width(), format);
+        let last_line_y = rect.top()
+            + format.font_size.into()
+            + Self::Scalar::from((lines.len() - 1) as u32)
+                * format.font_size.into()
+                * format.line_spacing;
+        last_line_y < rect.bottom()
+    }
     fn text_fits<R>(&mut self, text: &str, rect: R, format: TextFormat<Self::Scalar>) -> bool
     where
         R: Rectangle<Scalar = Self::Scalar>,
     {
-        self.max_line_width(text, rect.width(), format) < rect.width() && {
-            let lines = self.format_lines(text, rect.width(), format);
-            let last_line_y = rect.top()
-                + format.font_size.into()
-                + Self::Scalar::from((lines.len() - 1) as u32)
-                    * format.font_size.into()
-                    * format.line_spacing;
-            last_line_y < rect.bottom()
-        }
+        self.text_fits_horizontal(text, rect.clone(), format)
+            && self.text_fits_vertical(text, rect, format)
     }
     fn fit_max_font_size<R>(
         &mut self,
@@ -224,12 +245,12 @@ pub trait CharacterWidthCache {
         R: Rectangle<Scalar = Self::Scalar>,
     {
         let delta = delta.abs().max(Self::Scalar::ONE);
-        while self.text_fits(text, rect.clone(), format) {
+        while self.text_fits_vertical(text, rect.clone(), format) {
             rect = rect
                 .clone()
                 .with_size(R::Vector::new(rect.width(), rect.height() - delta))
         }
-        while !self.text_fits(text, rect.clone(), format) {
+        while !self.text_fits_vertical(text, rect.clone(), format) {
             rect = rect
                 .clone()
                 .with_size(R::Vector::new(rect.width(), rect.height() + delta))
