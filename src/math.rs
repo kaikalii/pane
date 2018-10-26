@@ -1,7 +1,4 @@
-use std::{
-    iter::Sum,
-    ops::{Add, Div, Mul, Neg, Sub},
-};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 pub trait Pair {
     type Item;
@@ -156,7 +153,6 @@ pub trait Scalar:
     + From<u32>
     + PartialEq
     + PartialOrd
-    + Sum<Self>
     + Sub<Self, Output = Self>
     + Mul<Self, Output = Self>
     + Div<Self, Output = Self>
@@ -166,6 +162,27 @@ pub trait Scalar:
     + Pow<Self, Output = Self>
     + ZeroOneTwo
 {
+    fn abs(self) -> Self {
+        if self >= Self::ZERO {
+            self
+        } else {
+            self.neg()
+        }
+    }
+    fn max(self, other: Self) -> Self {
+        if self > other {
+            self
+        } else {
+            other
+        }
+    }
+    fn min(self, other: Self) -> Self {
+        if self < other {
+            self
+        } else {
+            other
+        }
+    }
 }
 
 impl<T> Scalar for T where
@@ -175,7 +192,6 @@ impl<T> Scalar for T where
         + PartialEq
         + PartialOrd
         + Add<T, Output = T>
-        + Sum<T>
         + Sub<T, Output = T>
         + Mul<T, Output = T>
         + Div<T, Output = T>

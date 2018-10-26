@@ -39,7 +39,10 @@ impl Orientation {
         W: IntoIterator<Item = R::Scalar>,
     {
         let weights: Vec<R::Scalar> = weights.into_iter().collect();
-        let sum: R::Scalar = weights.iter().cloned().sum();
+        let sum: R::Scalar = weights
+            .iter()
+            .cloned()
+            .fold(R::Scalar::ZERO, std::ops::Add::add);
         match self {
             Orientation::Horizontal => {
                 let mut offset = rect.top_left().x();

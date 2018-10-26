@@ -84,7 +84,9 @@ pub trait CharacterWidthCache {
     type Scalar: Scalar;
     fn char_width(&mut self, character: char, font_size: u32) -> Self::Scalar;
     fn width(&mut self, text: &str, font_size: u32) -> Self::Scalar {
-        text.chars().map(|c| self.char_width(c, font_size)).sum()
+        text.chars()
+            .map(|c| self.char_width(c, font_size))
+            .fold(Self::Scalar::ZERO, std::ops::Add::add)
     }
     fn format_lines(
         &mut self,
@@ -196,6 +198,66 @@ pub trait CharacterWidthCache {
                     * format.line_spacing;
             last_line_y < rect.bottom()
         }
+    }
+    fn fit_max_font_size<R>(
+        &mut self,
+        text: &str,
+        rect: R,
+        mut format: TextFormat<Self::Scalar>,
+    ) -> u32
+    where
+        R: Rectangle<Scalar = Self::Scalar>,
+    {
+        while !self.text_fits(text, rect.clone(), format) {
+            format.font_size -= 1;
+        }
+        format.font_size
+    }
+    fn fit_min_height<R>(
+        &mut self,
+        text: &str,
+        mut rect: R,
+        format: TextFormat<Self::Scalar>,
+        delta: Self::Scalar,
+    ) -> Self::Scalar
+    where
+        R: Rectangle<Scalar = Self::Scalar>,
+    {
+        let delta = delta.abs().max(Self::Scalar::ONE);
+        while self.text_fits(text, rect.clone(), format) {
+            rect = rect
+                .clone()
+                .with_size(R::Vector::new(rect.width(), rect.height() - delta))
+        }
+        while !self.text_fits(text, rect.clone(), format) {
+            rect = rect
+                .clone()
+                .with_size(R::Vector::new(rect.width(), rect.height() + delta))
+        }
+        rect.height()
+    }
+    fn fit_min_width<R>(
+        &mut self,
+        text: &str,
+        mut rect: R,
+        format: TextFormat<Self::Scalar>,
+        delta: Self::Scalar,
+    ) -> Self::Scalar
+    where
+        R: Rectangle<Scalar = Self::Scalar>,
+    {
+        let delta = delta.abs().max(Self::Scalar::ONE);
+        while self.text_fits(text, rect.clone(), format) {
+            rect = rect
+                .clone()
+                .with_size(R::Vector::new(rect.width() - delta, rect.height()))
+        }
+        while !self.text_fits(text, rect.clone(), format) {
+            rect = rect
+                .clone()
+                .with_size(R::Vector::new(rect.width() + delta, rect.height()))
+        }
+        rect.width()
     }
 }
 
