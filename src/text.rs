@@ -138,6 +138,7 @@ pub trait CharacterWidthCache {
                 curr_width = curr_width + width + self.char_width(' ', format.font_size);
             }
             // Push the result line onto the result list
+            sized_line.pop();
             sized_lines.push(sized_line);
             first_line = false;
         }

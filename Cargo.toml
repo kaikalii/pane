@@ -1,9 +1,6 @@
 [[example]]
 name = 'simple'
 
-[[example]]
-name = 'image'
-
 [dependencies]
 rusttype = '0.7.2'
 
