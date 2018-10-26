@@ -6,14 +6,16 @@ use pane::prelude::*;
 
 static ROBOTO: &'static [u8] = include_bytes!("roboto.ttf");
 
+static MESSAGE: &'static str = "Nice weather we are having, isn't it? \
+                                It's such a beautiful day. \
+                                The air is so fresh and the temperature is just right.";
+
 fn main() {
     let mut glyphs = BufferGlyphs::from_bytes(ROBOTO).unwrap();
     let mut buffer = RenderBuffer::new(250, 200);
     buffer.clear([0.0, 0.0, 0.0, 1.0]);
     justified_text(
-        "Nice weather we are having, isn't it? \
-         It's such a beautiful day. \
-         The air is so fresh and the temperature is just right.",
+        MESSAGE,
         [0.0, 0.0, 250.0, 200.0],
         TextFormat::new(30),
         &mut glyphs,

@@ -265,6 +265,7 @@ pub trait Rectangle: Clone {
     type Vector: Vector2<Scalar = Self::Scalar>;
     fn new(top_left: Self::Vector, size: Self::Vector) -> Self;
     fn top_left(&self) -> Self::Vector;
+    fn size(&self) -> Self::Vector;
     fn top_right(&self) -> Self::Vector {
         Self::Vector::new(self.top_left().x() + self.size().x(), self.top_left().y())
     }
@@ -274,7 +275,18 @@ pub trait Rectangle: Clone {
     fn bottom_right(&self) -> Self::Vector {
         self.top_left().add(self.size())
     }
-    fn size(&self) -> Self::Vector;
+    fn top(&self) -> Self::Scalar {
+        self.top_left().y()
+    }
+    fn bottom(&self) -> Self::Scalar {
+        self.top_left().y() + self.size().y()
+    }
+    fn left(&self) -> Self::Scalar {
+        self.top_left().x()
+    }
+    fn right(&self) -> Self::Scalar {
+        self.top_left().x() + self.size().x()
+    }
     fn width(&self) -> Self::Scalar {
         self.size().x()
     }

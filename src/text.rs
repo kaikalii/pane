@@ -86,7 +86,7 @@ pub trait CharacterWidthCache {
     fn width(&mut self, text: &str, font_size: u32) -> Self::Scalar {
         text.chars().map(|c| self.char_width(c, font_size)).sum()
     }
-    fn max_width_lines(
+    fn format_lines(
         &mut self,
         text: &str,
         max_width: Self::Scalar,
@@ -144,6 +144,19 @@ pub trait CharacterWidthCache {
         }
         sized_lines
     }
+    fn max_line_width(
+        &mut self,
+        text: &str,
+        max_width: Self::Scalar,
+        format: TextFormat<Self::Scalar>,
+    ) -> Self::Scalar {
+        let lines = self.format_lines(text, max_width, format);
+        lines
+            .into_iter()
+            .map(|line| self.width(&line, format.font_size))
+            .max_by(|a, b| a.partial_cmp(b).expect("Incomperable scalars. Is one NaN?"))
+            .unwrap_or(Self::Scalar::ZERO)
+    }
     fn justify_text<R>(
         &mut self,
         text: &str,
@@ -153,22 +166,36 @@ pub trait CharacterWidthCache {
     where
         R: Rectangle<Scalar = Self::Scalar>,
     {
-        self.max_width_lines(text, rect.width(), format)
+        self.format_lines(text, rect.width(), format)
             .into_iter()
             .enumerate()
             .map(|(i, line)| {
-                let y_offset = rect.top_left().y()
+                let y_offset = rect.top()
                     + format.font_size.into()
                     + Self::Scalar::from(i as u32) * format.font_size.into() * format.line_spacing;
                 use self::Justification::*;
                 let line_width = self.width(&line, format.font_size);
                 let x_offset = match format.just {
-                    Left => rect.top_left().x(),
+                    Left => rect.left(),
                     Centered => rect.center().x() - line_width / Self::Scalar::TWO,
-                    Right => rect.top_right().x() - line_width,
+                    Right => rect.right() - line_width,
                 };
                 (R::Vector::new(x_offset, y_offset), line)
             }).collect()
+    }
+    fn text_fits<R>(&mut self, text: &str, rect: R, format: TextFormat<Self::Scalar>) -> bool
+    where
+        R: Rectangle<Scalar = Self::Scalar>,
+    {
+        self.max_line_width(text, rect.width(), format) < rect.width() && {
+            let lines = self.format_lines(text, rect.width(), format);
+            let last_line_y = rect.top()
+                + format.font_size.into()
+                + Self::Scalar::from((lines.len() - 1) as u32)
+                    * format.font_size.into()
+                    * format.line_spacing;
+            last_line_y < rect.bottom()
+        }
     }
 }
 
