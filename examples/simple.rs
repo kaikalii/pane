@@ -16,12 +16,14 @@ static MESSAGE3: &'static str = "in the shape of an 'L' on her forehead.";
 fn main() {
     // Initialize the glyphs
     let mut glyphs = BufferGlyphs::from_bytes(ROBOTO).unwrap();
-    // Initialize a format
+
+    // Initialize a text format
     let format = TextFormat::new(50).color(color::WHITE);
 
     // Create a pane
     let pane = Pane::new()
         .with_rect([0.0, 0.0, 400.0, 300.0])
+        .with_color(color::BLACK)
         .with_orientation(Orientation::Horizontal)
         // Add some sub-panes
         .with_panes(vec![
@@ -30,19 +32,22 @@ fn main() {
                 .with_color(color::RED)
                 .with_contents(Contents::Text(MESSAGE1.to_string(), format))
                 .with_margin(5.0),
-            // This pane will be on the right, but it is split by more sub-panes
-            Pane::new().with_panes(vec![
-                // This pane will be on the top-right
-                Pane::new()
-                    .with_color(color::GREEN)
-                    .with_contents(Contents::Text(MESSAGE2.to_string(), format.right()))
-                    .with_margin(5.0),
-                // This pane will be on the bottom-right
-                Pane::new()
-                    .with_color(color::BLUE)
-                    .with_contents(Contents::Text(MESSAGE3.to_string(), format.centered()))
-                    .with_margin(5.0),
-            ]),
+            // This pane will be on the right, but it is split into more sub-panes
+            Pane::new()
+                .with_color(color::WHITE)
+                .with_margin(5.0)
+                .with_panes(vec![
+                    // This pane will be in the top-right
+                    Pane::new()
+                        .with_color(color::GREEN)
+                        .with_contents(Contents::Text(MESSAGE2.to_string(), format.right()))
+                        .with_margin(5.0),
+                    // This pane will be in the bottom-right
+                    Pane::new()
+                        .with_color(color::BLUE)
+                        .with_contents(Contents::Text(MESSAGE3.to_string(), format.centered()))
+                        .with_margin(5.0),
+                ]),
         ])
         .with_margin(10.0)
         .fit_text(&mut glyphs);

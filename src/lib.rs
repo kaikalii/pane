@@ -17,7 +17,7 @@ pub mod prelude {
     pub use math::{Rectangle, Scalar, Vector2};
     #[cfg(feature = "graphics")]
     pub use text::justified_text;
-    pub use text::{CharacterWidthCache, Glyphs, Justification, TextFormat};
+    pub use text::{Justification, TextFormat};
     pub use Contents;
     pub use Orientation;
     pub use Pane;
@@ -310,13 +310,22 @@ where
         C::Error: std::fmt::Debug,
         G: Graphics<Texture = T>,
     {
-        let rect = self.rect().map::<[f64; 4]>();
-        rectangle(self.color, rect, transform, graphics);
+        rectangle(
+            self.color,
+            self.rect().map::<[f64; 4]>(),
+            transform,
+            graphics,
+        );
         if let Some(ref contents) = self.contents {
             match contents {
-                Contents::Text(text, format) => {
-                    justified_text(text, rect, *format, glyphs, transform, graphics)?
-                }
+                Contents::Text(text, format) => justified_text(
+                    text,
+                    self.margin_rect().map::<[f64; 4]>(),
+                    *format,
+                    glyphs,
+                    transform,
+                    graphics,
+                )?,
             }
         }
         for (_, pane) in &self.inner_panes {
@@ -464,7 +473,7 @@ pub mod color {
     /// Magenta
     pub const MAGENTA: Color = [1.0, 0.0, 1.0, 1.0];
     /// Black
-    pub const BLACK: Color = [0.0, 0.0, 1.0, 1.0];
+    pub const BLACK: Color = [0.0, 0.0, 0.0, 1.0];
     /// Gray (same as `GREY`)
     pub const GRAY: Color = [0.5, 0.5, 0.5, 1.0];
     /// Grey (same as `GRAY`)
