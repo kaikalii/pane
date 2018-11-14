@@ -25,7 +25,7 @@ pub mod prelude {
     pub use Pane;
 }
 
-use std::{collections::HashMap, ops};
+use std::{collections::HashMap, error, ops};
 
 #[cfg(feature = "graphics")]
 use graphics::{character::CharacterCache, math::Matrix2d, rectangle, Graphics, ImageSize};
@@ -321,7 +321,7 @@ where
     where
         T: ImageSize,
         C: CharacterCache<Texture = T>,
-        C::Error: std::fmt::Debug,
+        C::Error: error::Error,
         G: Graphics<Texture = T>,
     {
         rectangle(
