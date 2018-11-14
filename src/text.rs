@@ -296,6 +296,9 @@ pub trait CharacterWidthCache {
         R: Rectangle<Scalar = Self::Scalar>,
     {
         let lines = self.format_lines(text, rect.width(), format);
+        if lines.is_empty() {
+            return true;
+        }
         let last_line_y = rect.top()
             + format.font_size.into()
             + Self::Scalar::from((lines.len() - 1) as u32)
