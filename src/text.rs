@@ -9,6 +9,7 @@ use graphics::{
 use rusttype::{Error, Font, GlyphId, Scale};
 
 use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
+use Color;
 
 /// A horizantal text justification
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -58,7 +59,7 @@ where
     /// after the first
     pub lines_indent: usize,
     /// The color of the text
-    pub color: [f32; 4],
+    pub color: Color,
     /// The resize strategy
     pub resize: Resize,
 }
@@ -130,7 +131,7 @@ where
         self
     }
     /// Set the color
-    pub fn color(mut self, color: [f32; 4]) -> Self {
+    pub fn color(mut self, color: Color) -> Self {
         self.color = color;
         self
     }

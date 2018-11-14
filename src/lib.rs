@@ -13,6 +13,7 @@ pub mod math;
 mod text;
 /// A prelud containing commonly used items in `Pane`
 pub mod prelude {
+    pub use color;
     pub use math::{Rectangle, Scalar, Vector2};
     #[cfg(feature = "graphics")]
     pub use text::justified_text;
@@ -118,7 +119,7 @@ where
     names: HashMap<String, usize>,
     rect: R,
     inner_panes: Vec<(R::Scalar, Pane<R>)>,
-    color: [f32; 4],
+    color: Color,
 }
 
 impl<R> Pane<R>
@@ -137,7 +138,7 @@ where
                 R::Vector::new(R::Scalar::ZERO, R::Scalar::ZERO),
                 R::Vector::new(R::Scalar::ONE, R::Scalar::ONE),
             ),
-            color: [0.0; 4],
+            color: color::TRANSPARENT,
         }
     }
     /// Get the `Pane`'s contents
@@ -229,11 +230,11 @@ where
         self
     }
     /// Get the `Pane`'s color
-    pub fn color(&self) -> [f32; 4] {
+    pub fn color(&self) -> Color {
         self.color
     }
     /// Set the `Pane`'s color
-    pub fn with_color(mut self, color: [f32; 4]) -> Self {
+    pub fn with_color(mut self, color: Color) -> Self {
         self.color = color;
         self
     }
@@ -438,4 +439,38 @@ where
     fn named_weighted_pane(self) -> (Option<&'a str>, R::Scalar, Pane<R>) {
         (Some(self), R::Scalar::ONE, Pane::new())
     }
+}
+
+/// A color
+pub type Color = [f32; 4];
+
+/// Defines serveral color constants
+pub mod color {
+    use Color;
+    /// Red
+    pub const RED: Color = [1.0, 0.0, 0.0, 1.0];
+    /// Orange
+    pub const ORANGE: Color = [1.0, 0.5, 0.0, 1.0];
+    /// Yellow
+    pub const YELLOW: Color = [1.0, 1.0, 0.0, 1.0];
+    /// Green
+    pub const GREEN: Color = [0.0, 1.0, 0.0, 1.0];
+    /// Cyan
+    pub const CYAN: Color = [0.0, 1.0, 1.0, 1.0];
+    /// Blue
+    pub const BLUE: Color = [0.0, 0.0, 1.0, 1.0];
+    /// Purple
+    pub const PURPLE: Color = [0.5, 0.0, 0.5, 1.0];
+    /// Magenta
+    pub const MAGENTA: Color = [1.0, 0.0, 1.0, 1.0];
+    /// Black
+    pub const BLACK: Color = [0.0, 0.0, 1.0, 1.0];
+    /// Gray (same as `GREY`)
+    pub const GRAY: Color = [0.5, 0.5, 0.5, 1.0];
+    /// Grey (same as `GRAY`)
+    pub const GREY: Color = [0.5, 0.5, 0.5, 1.0];
+    /// White
+    pub const WHITE: Color = [1.0; 4];
+    /// Transparent
+    pub const TRANSPARENT: Color = [0.0; 4];
 }
