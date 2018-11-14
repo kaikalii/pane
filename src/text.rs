@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-#[cfg(feature = "graphics")]
-use std::error;
 
 #[cfg(feature = "graphics")]
 use graphics::{
@@ -449,13 +447,14 @@ where
 impl<C> CharacterWidthCache for C
 where
     C: CharacterCache,
-    C::Error: error::Error,
 {
     type Scalar = f64;
     fn char_width(&mut self, character: char, font_size: u32) -> Self::Scalar {
-        <Self as CharacterCache>::character(self, font_size, character)
-            .unwrap_or_else(|e| panic!("{}", e))
-            .size[0]
+        if let Ok(texture) = <Self as CharacterCache>::character(self, font_size, character) {
+            texture.size.x()
+        } else {
+            panic!("CharacterWidthCache::character returned Err")
+        }
     }
 }
 
@@ -477,7 +476,6 @@ where
     R: Rectangle<Scalar = f64>,
     T: ImageSize,
     C: CharacterCache<Texture = T>,
-    C::Error: error::Error,
     G: Graphics<Texture = T>,
 {
     for (pos, line) in glyphs.justify_text(text, rect, format.map_line_spacing::<f64>()) {
