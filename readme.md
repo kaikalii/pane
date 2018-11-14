@@ -76,3 +76,7 @@ fn main() {
 }
 
 ```
+
+This example creates the image below. Notice the different text justifications.
+
+![Hey now!](https://github.com/kaikalii/pane/blob/master/simple.png)
