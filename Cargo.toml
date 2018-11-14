@@ -4,23 +4,27 @@ name = 'simple'
 [dependencies]
 rusttype = '0.7.2'
 
-[dependencies.piston2d-graphics]
-optional = true
-version = '0.26.0'
-
 [dependencies.graphics_buffer]
 optional = true
-version = '*'
+version = '0.4.2'
+
+[dependencies.piston2d-graphics]
+optional = true
+version = '0.27.0'
 
 [features]
-default = ['graphics', 'buffer']
-graphics = ['piston2d-graphics']
 buffer = ['graphics_buffer']
+default = [
+    'graphics',
+    'buffer',
+]
+graphics = ['piston2d-graphics']
 
 [package]
 authors = ['Kai Schmidt <kaikaliischmidt@gmail.com>']
+description = 'Align text inside of resizable rectangular panes'
+documentation = 'https://docs.rs/pane/'
+license = 'MIT'
 name = 'pane'
+readme = 'readme.md'
 version = '0.1.0'
-license = "MIT"
-documentation = "https://docs.rs/pane/"
-readme = "readme.md"
