@@ -24,6 +24,7 @@ graphics = ['piston2d-graphics']
 authors = ['Kai Schmidt <kaikaliischmidt@gmail.com>']
 description = 'Align text inside of resizable rectangular panes'
 documentation = 'https://docs.rs/pane/'
+repository = 'https://github.com/kaikalii/pane'
 license = 'MIT'
 name = 'pane'
 readme = 'readme.md'

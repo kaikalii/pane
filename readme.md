@@ -1,4 +1,8 @@
 
+[on crates.io](https://crates.io/crates/pane)
+
+[API Documentation](https://docs.rs/pane/)
+
 ### Description
 
 This crate provides a data structure for text alignment. Rectangular `Pane`s, which may have smaller child `Pane`s, can be defined, and the positions of characters of text within them can be calculated.
