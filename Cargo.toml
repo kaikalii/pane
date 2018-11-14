@@ -21,3 +21,6 @@ buffer = ['graphics_buffer']
 authors = ['Kai Schmidt <kaikaliischmidt@gmail.com>']
 name = 'pane'
 version = '0.1.0'
+license = "MIT"
+documentation = "https://docs.rs/pane/"
+readme = "readme.md"

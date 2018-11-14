@@ -1,7 +1,9 @@
 #![deny(missing_docs)]
 
-//! This crate provides data structures for text alignment. Rectangular `Pane`s (which may have smaller, sub-`Pane`s)
+//! This crate provides a data structure for text alignment. Rectangular `Pane`s (which may have smaller, child `Pane`s)
 //! can be defined, and the positions of characters of text within them can be calculated.
+//!
+//! The `graphics` feature, which is on by default, allow the direct rendering of a `Pane` with the `piston2d-graphics` crate.
 
 #[cfg(feature = "graphics")]
 extern crate graphics;
@@ -103,8 +105,11 @@ impl Orientation {
 /// A rectangle which automatically determines the positions and sizes
 /// of things withing it
 ///
-/// A `Pane` can have any number of sub-`Panes`, each of which has a size
-/// constrained by their parent `Pane`.
+/// A `Pane` can have any number of child `Panes`, each of which has a size
+/// constrained by their parent `Pane`. The size and position of each child
+/// pane depends on its weight relative to its siblings as well as the split
+/// `Orientation` of its parent. This allows panes to be resized while keeping
+/// all their child panes consistently sized.
 ///
 /// A pane can also have optional contents. Contents will be resized to fit
 /// the `Pane`
@@ -118,7 +123,7 @@ where
     margin: R::Scalar,
     names: HashMap<String, usize>,
     rect: R,
-    inner_panes: Vec<(R::Scalar, Pane<R>)>,
+    children: Vec<(R::Scalar, Pane<R>)>,
     color: Color,
 }
 
@@ -133,13 +138,21 @@ where
             orientation: Orientation::default(),
             margin: R::Scalar::ZERO,
             names: HashMap::new(),
-            inner_panes: Vec::new(),
+            children: Vec::new(),
             rect: R::new(
                 R::Vector::new(R::Scalar::ZERO, R::Scalar::ZERO),
                 R::Vector::new(R::Scalar::ONE, R::Scalar::ONE),
             ),
             color: color::TRANSPARENT,
         }
+    }
+    /// Immutable iterate over the `Pane`'s children
+    pub fn children(&self) -> impl DoubleEndedIterator<Item = &Pane<R>> {
+        self.children.iter().map(|(_, pane)| pane)
+    }
+    /// Mutable iterate over the `Pane`'s children
+    pub fn children_mut(&mut self) -> impl DoubleEndedIterator<Item = &mut Pane<R>> {
+        self.children.iter_mut().map(|(_, pane)| pane)
     }
     /// Get the `Pane`'s contents
     pub fn contents(&self) -> Option<&Contents<R::Scalar>> {
@@ -204,7 +217,7 @@ where
         I: IntoIterator<Item = P>,
     {
         let mut new_names = HashMap::new();
-        self.inner_panes = panes
+        self.children = panes
             .into_iter()
             .map(NamedWeightedPane::named_weighted_pane)
             .enumerate()
@@ -265,9 +278,9 @@ where
         let new_rects = self.orientation.split_rect(
             self.margin,
             margin_rect,
-            self.inner_panes.iter().map(|(w, _)| *w),
+            self.children.iter().map(|(w, _)| *w),
         );
-        for (pane, rect) in self.inner_panes.iter_mut().zip(new_rects) {
+        for (pane, rect) in self.children.iter_mut().zip(new_rects) {
             pane.1.rect = rect;
             pane.1.update_rects();
         }
@@ -277,12 +290,13 @@ where
     where
         C: CharacterWidthCache<Scalar = R::Scalar>,
     {
+        self.update_rects();
         let margin_rect = self.margin_rect();
         if let Some(Contents::Text(ref text, ref mut format)) = self.contents {
             *format = format.resize_font(glyphs.fit_max_font_size(text, margin_rect, *format));
         }
-        self.inner_panes = self
-            .inner_panes
+        self.children = self
+            .children
             .into_iter()
             .map(|(w, pane)| (w, pane.fit_text(glyphs)))
             .collect();
@@ -328,7 +342,7 @@ where
                 )?,
             }
         }
-        for (_, pane) in &self.inner_panes {
+        for (_, pane) in &self.children {
             pane.draw(glyphs, transform, graphics)?;
         }
         Ok(())
@@ -341,7 +355,7 @@ where
 {
     type Output = Pane<R>;
     fn index(&self, index: usize) -> &Self::Output {
-        &self.inner_panes[index].1
+        &self.children[index].1
     }
 }
 
@@ -372,8 +386,8 @@ where
     where
         F: Fn(Self::Accessed) -> Self::Accessed,
     {
-        self.inner_panes = self
-            .inner_panes
+        self.children = self
+            .children
             .into_iter()
             .enumerate()
             .map(|(i, (w, pane))| (w, if i == index { f(pane) } else { pane }))
@@ -396,12 +410,12 @@ where
     }
 }
 
-/// Defines conversion into a sub-`Pane` with a weight and optional name
+/// Defines conversion into a child `Pane` with a weight and optional name
 pub trait NamedWeightedPane<'a, R>
 where
     R: Rectangle,
 {
-    /// Converts into a sub-`Pane` with a weight and optional name
+    /// Converts into a child `Pane` with a weight and optional name
     fn named_weighted_pane(self) -> (Option<&'a str>, R::Scalar, Pane<R>);
 }
 

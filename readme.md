@@ -1,3 +1,15 @@
+
+### Description
+
+This crate provides a data structure for text alignment. Rectangular `Pane`s, which may have smaller child `Pane`s, can be defined, and the positions of characters of text within them can be calculated.
+
+The `graphics` feature, which is on by default, allows the direct rendering of a `Pane` with the `piston2d-graphics` crate.
+
+### Example
+
+The following example creates a simple `Pane` tree where some nodes contain formatted text. The `Pane` is then drawn using my [`graphics_buffer`](https://github.com/kaikalii/graphics_buffer) crate, and the image is saved to a file.
+
+```rust
 extern crate graphics_buffer;
 extern crate pane;
 
@@ -62,3 +74,5 @@ fn main() {
     // Save the buffer
     buffer.save("simple.png").unwrap();
 }
+
+```
