@@ -244,12 +244,12 @@ pub trait Vector2: Sized {
     /// Create a new vector from an x and y component
     fn new(x: Self::Scalar, y: Self::Scalar) -> Self;
     /// Map this vector to a vector of another type
-    fn map<U, V>(&self) -> V
+    fn map<V>(&self) -> V
     where
-        U: Scalar + From<Self::Scalar>,
-        V: Vector2<Scalar = U>,
+        V: Vector2,
+        V::Scalar: From<Self::Scalar>,
     {
-        V::new(U::from(self.x()), U::from(self.y()))
+        V::new(V::Scalar::from(self.x()), V::Scalar::from(self.y()))
     }
     /// Negate the vector
     fn neg(self) -> Self {
@@ -335,6 +335,21 @@ pub trait Rectangle: Clone {
     fn top_left(&self) -> Self::Vector;
     /// Get the size
     fn size(&self) -> Self::Vector;
+    /// Map this rectangle to a rectangle of another type
+    fn map<R>(&self) -> R
+    where
+        R: Rectangle,
+        R::Scalar: From<Self::Scalar>,
+    {
+        // R::new()
+        R::new(
+            R::Vector::new(R::Scalar::from(self.left()), R::Scalar::from(self.top())),
+            R::Vector::new(
+                R::Scalar::from(self.width()),
+                R::Scalar::from(self.height()),
+            ),
+        )
+    }
     /// Get the top-right corner position
     fn top_right(&self) -> Self::Vector {
         Self::Vector::new(self.top_left().x() + self.size().x(), self.top_left().y())

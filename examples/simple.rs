@@ -14,56 +14,44 @@ static MESSAGE2: &'static str = "She was lookin' kinda dumb with her finger and 
 static MESSAGE3: &'static str = "in the shape of an 'L' on her forehead.";
 
 fn main() {
+    // Initialize the glyphs
     let mut glyphs = BufferGlyphs::from_bytes(ROBOTO).unwrap();
+    // Initialize a format
     let format = TextFormat::new(50);
+
+    // Create a pane
     let pane = Pane::new()
-        .with_rect([0.0, 0.0, 400.0, 400.0])
+        .with_rect([0.0, 0.0, 400.0, 300.0])
         .with_orientation(Orientation::Horizontal)
+        .with_color([1.0; 4])
+        // Add some sub-panes
         .with_panes(vec![
+            // This pane will be on the left
             Pane::new()
                 .with_contents(Contents::Text(MESSAGE1.to_string(), format))
                 .with_margin(5.0),
+            // This pane will be on the right, but it is split by more sub-panes
             Pane::new().with_panes(vec![
+                // This pane will be on the top-right
                 Pane::new()
                     .with_contents(Contents::Text(MESSAGE2.to_string(), format.right()))
                     .with_margin(5.0),
+                // This pane will be on the bottom-right
                 Pane::new()
                     .with_contents(Contents::Text(MESSAGE3.to_string(), format.centered()))
                     .with_margin(5.0),
             ]),
-        ]).with_margin(10.0)
+        ])
+        .with_margin(10.0)
         .fit_text(&mut glyphs);
+
+    // Create a RenderBuffer with the same size as the pane
     let mut buffer = RenderBuffer::new(pane.rect().width() as u32, pane.rect().height() as u32);
-    buffer.clear([0.0, 0.0, 0.0, 1.0]);
-    if let Some(Contents::Text(text, format)) = pane[0].contents() {
-        justified_text(
-            text,
-            pane[0].rect(),
-            *format,
-            &mut glyphs,
-            identity(),
-            &mut buffer,
-        ).unwrap();
-    }
-    if let Some(Contents::Text(text, format)) = pane[1][0].contents() {
-        justified_text(
-            text,
-            pane[1][0].rect(),
-            *format,
-            &mut glyphs,
-            identity(),
-            &mut buffer,
-        ).unwrap();
-    }
-    if let Some(Contents::Text(text, format)) = pane[1][1].contents() {
-        justified_text(
-            text,
-            pane[1][1].rect(),
-            *format,
-            &mut glyphs,
-            identity(),
-            &mut buffer,
-        ).unwrap();
-    }
+    buffer.clear([1.0, 1.0, 1.0, 1.0]);
+
+    // Draw the pane to the buffer
+    pane.draw(&mut glyphs, identity(), &mut buffer).unwrap();
+
+    // Save the buffer
     buffer.save("simple.png").unwrap();
 }

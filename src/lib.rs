@@ -24,7 +24,11 @@ pub mod prelude {
 
 use std::{collections::HashMap, ops};
 
-pub use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
+#[cfg(feature = "graphics")]
+use graphics::{character::CharacterCache, math::Matrix2d, rectangle, Graphics, ImageSize};
+
+use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
+
 pub use text::*;
 
 /// Possible content of a `Pane`
@@ -114,6 +118,7 @@ where
     names: HashMap<String, usize>,
     rect: R,
     inner_panes: Vec<(R::Scalar, Pane<R>)>,
+    color: [f32; 4],
 }
 
 impl<R> Pane<R>
@@ -132,6 +137,7 @@ where
                 R::Vector::new(R::Scalar::ZERO, R::Scalar::ZERO),
                 R::Vector::new(R::Scalar::ONE, R::Scalar::ONE),
             ),
+            color: [0.0; 4],
         }
     }
     /// Get the `Pane`'s contents
@@ -222,6 +228,15 @@ where
         self.update_rects();
         self
     }
+    /// Get the `Pane`'s color
+    pub fn color(&self) -> [f32; 4] {
+        self.color
+    }
+    /// Set the `Pane`'s color
+    pub fn with_color(mut self, color: [f32; 4]) -> Self {
+        self.color = color;
+        self
+    }
     /// Get the `Pane`'s margin
     pub fn margin(&self) -> R::Scalar {
         self.margin
@@ -271,6 +286,42 @@ where
             .map(|(w, pane)| (w, pane.fit_text(glyphs)))
             .collect();
         self
+    }
+}
+
+impl<R> Pane<R>
+where
+    R: Rectangle,
+    f64: From<R::Scalar>,
+{
+    /// Draw the `Pane` and all its contents to something using
+    /// the `piston2d-graphics` crate
+    #[cfg(feature = "graphics")]
+    pub fn draw<T, C, G>(
+        &self,
+        glyphs: &mut C,
+        transform: Matrix2d,
+        graphics: &mut G,
+    ) -> Result<(), C::Error>
+    where
+        T: ImageSize,
+        C: CharacterCache<Texture = T>,
+        C::Error: std::fmt::Debug,
+        G: Graphics<Texture = T>,
+    {
+        let rect = self.rect().map::<[f64; 4]>();
+        rectangle(self.color, rect, transform, graphics);
+        if let Some(ref contents) = self.contents {
+            match contents {
+                Contents::Text(text, format) => {
+                    justified_text(text, rect, *format, glyphs, transform, graphics)?
+                }
+            }
+        }
+        for (_, pane) in &self.inner_panes {
+            pane.draw(glyphs, transform, graphics)?;
+        }
+        Ok(())
     }
 }
 

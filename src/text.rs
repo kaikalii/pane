@@ -75,7 +75,7 @@ where
             line_spacing: S::ONE,
             first_line_indent: 0,
             lines_indent: 0,
-            color: [1.0; 4],
+            color: [0.0, 0.0, 0.0, 1.0],
             resize: Resize::NoLarger,
         }
     }
@@ -103,6 +103,21 @@ where
     pub fn line_spacing(mut self, line_spacing: S) -> Self {
         self.line_spacing = line_spacing;
         self
+    }
+    /// Changes the type of the line spacing and thus the `TextFormat` itself
+    pub fn map_line_spacing<U>(&self) -> TextFormat<U>
+    where
+        U: Scalar + From<S>,
+    {
+        TextFormat {
+            font_size: self.font_size,
+            just: self.just,
+            line_spacing: U::from(self.line_spacing),
+            first_line_indent: self.first_line_indent,
+            lines_indent: self.lines_indent,
+            color: self.color,
+            resize: self.resize,
+        }
     }
     /// Set the indentation of the first line
     pub fn first_line_indent(mut self, first_line_indent: usize) -> Self {
@@ -444,22 +459,24 @@ where
 ///
 /// Text will be drawn in the given rectangle and use the given format
 #[cfg(feature = "graphics")]
-pub fn justified_text<R, T, C, G>(
+pub fn justified_text<U, R, T, C, G>(
     text: &str,
     rect: R,
-    format: TextFormat<R::Scalar>,
+    format: TextFormat<U>,
     glyphs: &mut C,
     transform: Matrix2d,
     graphics: &mut G,
 ) -> Result<(), C::Error>
 where
+    U: Scalar,
+    f64: From<U>,
     R: Rectangle<Scalar = f64>,
     T: ImageSize,
     C: CharacterCache<Texture = T>,
     C::Error: fmt::Debug,
     G: Graphics<Texture = T>,
 {
-    for (pos, line) in glyphs.justify_text(text, rect, format) {
+    for (pos, line) in glyphs.justify_text(text, rect, format.map_line_spacing::<f64>()) {
         draw_text(
             format.color,
             format.font_size,
