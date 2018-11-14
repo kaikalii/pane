@@ -239,7 +239,7 @@ pub trait CharacterWidthCache {
         lines
             .into_iter()
             .map(|line| self.width(&line, format.font_size))
-            .max_by(|a, b| a.partial_cmp(b).expect("Incomperable scalars. Is one NaN?"))
+            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .unwrap_or(Self::Scalar::ZERO)
     }
     /// Calculate a set of positioned lines of text with the given format
@@ -323,7 +323,7 @@ pub trait CharacterWidthCache {
     where
         R: Rectangle<Scalar = Self::Scalar>,
     {
-        while !self.text_fits(text, rect.clone(), format) {
+        while !self.text_fits(text, rect.clone(), format) && format.font_size > 1 {
             format.font_size -= 1;
         }
         format.font_size

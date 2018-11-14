@@ -341,7 +341,6 @@ pub trait Rectangle: Clone {
         R: Rectangle,
         R::Scalar: From<Self::Scalar>,
     {
-        // R::new()
         R::new(
             R::Vector::new(R::Scalar::from(self.left()), R::Scalar::from(self.top())),
             R::Vector::new(
