@@ -28,3 +28,14 @@ license = 'MIT'
 name = 'pane'
 readme = 'readme.md'
 version = '0.1.0'
+keywords = [
+    "text",
+    "align",
+    "render",
+    "font",
+    "word"
+]
+categories = [
+    "gui",
+    "rendering"
+]
