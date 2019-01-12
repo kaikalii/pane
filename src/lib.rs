@@ -5,24 +5,18 @@
 //!
 //! The `graphics` feature, which is on by default, allow the direct rendering of a `Pane` with the `piston2d-graphics` crate.
 
-#[cfg(feature = "graphics")]
-extern crate graphics;
-#[cfg(feature = "buffer")]
-extern crate graphics_buffer;
-extern crate rusttype;
-
 pub mod math;
 mod text;
 /// A prelud containing commonly used items in `Pane`
 pub mod prelude {
-    pub use color;
-    pub use math::{Rectangle, Scalar, Vector2};
+    pub use crate::color;
+    pub use crate::math::{Rectangle, Scalar, Vector2};
     #[cfg(feature = "graphics")]
-    pub use text::justified_text;
-    pub use text::{Justification, TextFormat};
-    pub use Contents;
-    pub use Orientation;
-    pub use Pane;
+    pub use crate::text::justified_text;
+    pub use crate::text::{Justification, TextFormat};
+    pub use crate::Contents;
+    pub use crate::Orientation;
+    pub use crate::Pane;
 }
 
 use std::{collections::HashMap, ops};
@@ -30,9 +24,9 @@ use std::{collections::HashMap, ops};
 #[cfg(feature = "graphics")]
 use graphics::{character::CharacterCache, math::Matrix2d, rectangle, Graphics, ImageSize};
 
-use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
+use crate::math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
 
-pub use text::*;
+pub use crate::text::*;
 
 /// Possible content of a `Pane`
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -42,6 +36,21 @@ where
 {
     /// Text with some format
     Text(String, TextFormat<S>),
+}
+
+impl<S> Contents<S>
+where
+    S: Scalar,
+{
+    /// Create a new `Context::Text`
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn text<T, F>(text: T, format: F) -> Self
+    where
+        T: ToString,
+        F: Into<TextFormat<S>>,
+    {
+        Contents::Text(text.to_string(), format.into())
+    }
 }
 
 /// An orientation for splitting a `Pane`
@@ -60,7 +69,7 @@ impl Default for Orientation {
 }
 
 impl Orientation {
-    fn split_rect<R, W>(&self, margin: R::Scalar, rect: R, weights: W) -> Vec<R>
+    fn split_rect<R, W>(self, margin: R::Scalar, rect: R, weights: W) -> Vec<R>
     where
         R: Rectangle,
         W: IntoIterator<Item = R::Scalar>,
@@ -127,6 +136,15 @@ where
     color: Color,
 }
 
+impl<R> Default for Pane<R>
+where
+    R: Rectangle,
+{
+    fn default() -> Self {
+        Pane::new()
+    }
+}
+
 impl<R> Pane<R>
 where
     R: Rectangle,
@@ -170,7 +188,7 @@ where
     }
     /// Get the `Pane`'s rectangle
     pub fn rect(&self) -> R {
-        self.rect.clone()
+        self.rect
     }
     /// Set the `Pane`'s rectangle
     pub fn with_rect(mut self, rect: R) -> Self {
@@ -306,8 +324,7 @@ where
 
 impl<R> Pane<R>
 where
-    R: Rectangle,
-    f64: From<R::Scalar>,
+    R: Rectangle<Scalar = f64>,
 {
     /// Draw the `Pane` and all its contents to something using
     /// the `piston2d-graphics` crate
@@ -463,12 +480,11 @@ where
     }
 }
 
-/// A color
-pub type Color = [f32; 4];
-
 /// Defines serveral color constants
 pub mod color {
-    use Color;
+    /// A 4-channel color
+    pub type Color = [f32; 4];
+
     /// Red
     pub const RED: Color = [1.0, 0.0, 0.0, 1.0];
     /// Orange
@@ -496,3 +512,5 @@ pub mod color {
     /// Transparent
     pub const TRANSPARENT: Color = [0.0; 4];
 }
+
+pub use self::color::Color;

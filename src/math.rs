@@ -151,7 +151,7 @@ impl Pow<Self> for f64 {
 }
 
 /// Trait for defining small-number constants
-pub trait ZeroOneTwo {
+pub trait ZeroOneTwo: Copy {
     /// Zero `0`
     const ZERO: Self;
     /// One `1`
@@ -234,7 +234,7 @@ impl<T> Scalar for T where
 }
 
 /// Trait for manipulating 2D vectors
-pub trait Vector2: Sized {
+pub trait Vector2: Copy {
     /// The scalar type
     type Scalar: Scalar;
     /// Get the x component
@@ -297,7 +297,7 @@ pub trait Vector2: Sized {
     ) -> Self {
         let sin = (-radians).sin();
         let cos = (-radians).cos();
-        let origin_point = self.sub(pivot.clone());
+        let origin_point = self.sub(pivot);
         let rotated_point = Self::new(
             origin_point.x() * cos - origin_point.y() * sin,
             origin_point.x() * sin + origin_point.y() * cos,
@@ -308,7 +308,7 @@ pub trait Vector2: Sized {
 
 impl<P> Vector2 for P
 where
-    P: Pair,
+    P: Pair + Copy,
     P::Item: Scalar,
 {
     type Scalar = P::Item;
@@ -324,7 +324,7 @@ where
 }
 
 /// A trait for manipulating rectangles
-pub trait Rectangle: Clone {
+pub trait Rectangle: Copy {
     /// The scalar type
     type Scalar: Scalar;
     /// The vector type
@@ -402,7 +402,7 @@ pub trait Rectangle: Clone {
 
 impl<P> Rectangle for P
 where
-    P: Pair + Clone,
+    P: Pair + Copy,
     P::Item: Vector2,
 {
     type Scalar = <P::Item as Vector2>::Scalar;

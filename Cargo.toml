@@ -2,15 +2,15 @@
 name = 'simple'
 
 [dependencies]
-rusttype = '0.7.2'
+rusttype = '0.7.3'
 
 [dependencies.graphics_buffer]
 optional = true
-version = '0.4.2'
+version = '0.5.0'
 
 [dependencies.piston2d-graphics]
 optional = true
-version = '0.27.0'
+version = '0.28.0'
 
 [features]
 buffer = ['graphics_buffer']
@@ -22,21 +22,22 @@ graphics = ['piston2d-graphics']
 
 [package]
 authors = ['Kai Schmidt <kaikaliischmidt@gmail.com>']
+categories = [
+    'gui',
+    'rendering',
+]
 description = 'Align text inside of resizable rectangular panes'
 documentation = 'https://docs.rs/pane/'
-repository = 'https://github.com/kaikalii/pane'
+edition = '2018'
+keywords = [
+    'text',
+    'align',
+    'render',
+    'font',
+    'word',
+]
 license = 'MIT'
 name = 'pane'
 readme = 'readme.md'
-version = '0.1.2'
-keywords = [
-    "text",
-    "align",
-    "render",
-    "font",
-    "word"
-]
-categories = [
-    "gui",
-    "rendering"
-]
+repository = 'https://github.com/kaikalii/pane'
+version = '0.2.0'

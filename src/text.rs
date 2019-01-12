@@ -6,8 +6,8 @@ use graphics::{
 };
 use rusttype::{Error, Font, GlyphId, Scale};
 
-use math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
-use Color;
+use crate::math::{Rectangle, Scalar, Vector2, ZeroOneTwo};
+use crate::Color;
 
 /// A horizantal text justification
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -60,6 +60,15 @@ where
     pub color: Color,
     /// The resize strategy
     pub resize: Resize,
+}
+
+impl<S> From<u32> for TextFormat<S>
+where
+    S: Scalar,
+{
+    fn from(font_size: u32) -> Self {
+        TextFormat::new(font_size)
+    }
 }
 
 impl<S> TextFormat<S>
@@ -169,12 +178,11 @@ pub trait CharacterWidthCache {
     }
     /// Split a string into a list of lines of text with the given format where no line
     /// is wider than the given max width. Newlines (`\n`) in the string are respected
-    fn format_lines(
-        &mut self,
-        text: &str,
-        max_width: Self::Scalar,
-        format: TextFormat<Self::Scalar>,
-    ) -> Vec<String> {
+    fn format_lines<F>(&mut self, text: &str, max_width: Self::Scalar, format: F) -> Vec<String>
+    where
+        F: Into<TextFormat<Self::Scalar>>,
+    {
+        let format = format.into();
         let mut sized_lines = Vec::new();
         let mut first_line = false;
         // Iterate through lines
@@ -229,12 +237,11 @@ pub trait CharacterWidthCache {
     }
     /// Get the width of the widest line after performing
     /// the calculation of `CharacterWidthCache::format_lines`
-    fn max_line_width(
-        &mut self,
-        text: &str,
-        max_width: Self::Scalar,
-        format: TextFormat<Self::Scalar>,
-    ) -> Self::Scalar {
+    fn max_line_width<F>(&mut self, text: &str, max_width: Self::Scalar, format: F) -> Self::Scalar
+    where
+        F: Into<TextFormat<Self::Scalar>>,
+    {
+        let format = format.into();
         let lines = self.format_lines(text, max_width, format);
         lines
             .into_iter()
@@ -244,15 +251,12 @@ pub trait CharacterWidthCache {
     }
     /// Calculate a set of positioned lines of text with the given format
     /// that fit within the given rectangle
-    fn justify_text<R>(
-        &mut self,
-        text: &str,
-        rect: R,
-        format: TextFormat<Self::Scalar>,
-    ) -> PositionedLines<R::Vector>
+    fn justify_text<R, F>(&mut self, text: &str, rect: R, format: F) -> PositionedLines<R::Vector>
     where
         R: Rectangle<Scalar = Self::Scalar>,
+        F: Into<TextFormat<Self::Scalar>>,
     {
+        let format = format.into();
         self.format_lines(text, rect.width(), format)
             .into_iter()
             .enumerate()
@@ -272,27 +276,20 @@ pub trait CharacterWidthCache {
             .collect()
     }
     /// Check if text with the given format fits within a rectangle's width
-    fn text_fits_horizontal<R>(
-        &mut self,
-        text: &str,
-        rect: R,
-        format: TextFormat<Self::Scalar>,
-    ) -> bool
+    fn text_fits_horizontal<R, F>(&mut self, text: &str, rect: R, format: F) -> bool
     where
         R: Rectangle<Scalar = Self::Scalar>,
+        F: Into<TextFormat<Self::Scalar>>,
     {
         self.max_line_width(text, rect.width(), format) < rect.width()
     }
     /// Check if text with the given format fits within a rectangle's height
-    fn text_fits_vertical<R>(
-        &mut self,
-        text: &str,
-        rect: R,
-        format: TextFormat<Self::Scalar>,
-    ) -> bool
+    fn text_fits_vertical<R, F>(&mut self, text: &str, rect: R, format: F) -> bool
     where
         R: Rectangle<Scalar = Self::Scalar>,
+        F: Into<TextFormat<Self::Scalar>>,
     {
+        let format = format.into();
         let lines = self.format_lines(text, rect.width(), format);
         if lines.is_empty() {
             return true;
@@ -305,25 +302,23 @@ pub trait CharacterWidthCache {
         last_line_y < rect.bottom()
     }
     /// Check if text with the given format fits within a rectangle
-    fn text_fits<R>(&mut self, text: &str, rect: R, format: TextFormat<Self::Scalar>) -> bool
+    fn text_fits<R, F>(&mut self, text: &str, rect: R, format: F) -> bool
     where
         R: Rectangle<Scalar = Self::Scalar>,
+        F: Into<TextFormat<Self::Scalar>>,
     {
-        self.text_fits_horizontal(text, rect.clone(), format)
-            && self.text_fits_vertical(text, rect, format)
+        let format = format.into();
+        self.text_fits_horizontal(text, rect, format) && self.text_fits_vertical(text, rect, format)
     }
     /// Determine the maximum font size for text with the given format
     /// that will still allow the text to fit within a rectangle
-    fn fit_max_font_size<R>(
-        &mut self,
-        text: &str,
-        rect: R,
-        mut format: TextFormat<Self::Scalar>,
-    ) -> u32
+    fn fit_max_font_size<R, F>(&mut self, text: &str, rect: R, format: F) -> u32
     where
         R: Rectangle<Scalar = Self::Scalar>,
+        F: Into<TextFormat<Self::Scalar>>,
     {
-        while !self.text_fits(text, rect.clone(), format) {
+        let mut format = format.into();
+        while !self.text_fits(text, rect, format) {
             format.font_size -= 1;
         }
         format.font_size
@@ -334,26 +329,24 @@ pub trait CharacterWidthCache {
     /// The given delta value defines how much to increment the
     /// rectangle's height on each check. Lower deltas will yield
     /// more accurate results, but will take longer to computer.
-    fn fit_min_height<R>(
+    fn fit_min_height<R, F>(
         &mut self,
         text: &str,
         mut rect: R,
-        format: TextFormat<Self::Scalar>,
+        format: F,
         delta: Self::Scalar,
     ) -> Self::Scalar
     where
         R: Rectangle<Scalar = Self::Scalar>,
+        F: Into<TextFormat<Self::Scalar>>,
     {
+        let format = format.into();
         let delta = delta.abs().max(Self::Scalar::ONE);
-        while self.text_fits_vertical(text, rect.clone(), format) {
-            rect = rect
-                .clone()
-                .with_size(R::Vector::new(rect.width(), rect.height() - delta))
+        while self.text_fits_vertical(text, rect, format) {
+            rect = rect.with_size(R::Vector::new(rect.width(), rect.height() - delta))
         }
-        while !self.text_fits_vertical(text, rect.clone(), format) {
-            rect = rect
-                .clone()
-                .with_size(R::Vector::new(rect.width(), rect.height() + delta))
+        while !self.text_fits_vertical(text, rect, format) {
+            rect = rect.with_size(R::Vector::new(rect.width(), rect.height() + delta))
         }
         rect.height()
     }
@@ -363,26 +356,24 @@ pub trait CharacterWidthCache {
     /// The given delta value defines how much to increment the
     /// rectangle's width on each check. Lower deltas will yield
     /// more accurate results, but will take longer to computer.
-    fn fit_min_width<R>(
+    fn fit_min_width<R, F>(
         &mut self,
         text: &str,
         mut rect: R,
-        format: TextFormat<Self::Scalar>,
+        format: F,
         delta: Self::Scalar,
     ) -> Self::Scalar
     where
         R: Rectangle<Scalar = Self::Scalar>,
+        F: Into<TextFormat<Self::Scalar>>,
     {
+        let format = format.into();
         let delta = delta.abs().max(Self::Scalar::ONE);
-        while self.text_fits(text, rect.clone(), format) {
-            rect = rect
-                .clone()
-                .with_size(R::Vector::new(rect.width() - delta, rect.height()))
+        while self.text_fits(text, rect, format) {
+            rect = rect.with_size(R::Vector::new(rect.width() - delta, rect.height()))
         }
-        while !self.text_fits(text, rect.clone(), format) {
-            rect = rect
-                .clone()
-                .with_size(R::Vector::new(rect.width() + delta, rect.height()))
+        while !self.text_fits(text, rect, format) {
+            rect = rect.with_size(R::Vector::new(rect.width() + delta, rect.height()))
         }
         rect.width()
     }
@@ -436,9 +427,7 @@ where
                 } else {
                     glyph
                 };
-                let h_metrics = glyph.h_metrics();
-
-                h_metrics.advance_width.into()
+                glyph.h_metrics().advance_width.into()
             })
     }
 }
@@ -462,22 +451,22 @@ where
 ///
 /// Text will be drawn in the given rectangle and use the given format
 #[cfg(feature = "graphics")]
-pub fn justified_text<U, R, T, C, G>(
+pub fn justified_text<R, F, T, C, G>(
     text: &str,
     rect: R,
-    format: TextFormat<U>,
+    format: F,
     glyphs: &mut C,
     transform: Matrix2d,
     graphics: &mut G,
 ) -> Result<(), C::Error>
 where
-    U: Scalar,
-    f64: From<U>,
     R: Rectangle<Scalar = f64>,
+    F: Into<TextFormat<R::Scalar>>,
     T: ImageSize,
     C: CharacterCache<Texture = T>,
     G: Graphics<Texture = T>,
 {
+    let format = format.into();
     for (pos, line) in glyphs.justify_text(text, rect, format.map_line_spacing::<f64>()) {
         draw_text(
             format.color,
