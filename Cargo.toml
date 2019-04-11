@@ -3,7 +3,6 @@ name = 'simple'
 
 [dependencies]
 rusttype = '0.7.4'
-vector2math = '*'
 
 [dependencies.graphics_buffer]
 optional = true
