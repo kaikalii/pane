@@ -3,10 +3,11 @@ name = 'simple'
 
 [dependencies]
 rusttype = '0.7.4'
+vector2math = '*'
 
 [dependencies.graphics_buffer]
 optional = true
-version = '0.5.3'
+version = '0.6.0'
 
 [dependencies.piston2d-graphics]
 optional = true
@@ -40,4 +41,4 @@ license = 'MIT'
 name = 'pane'
 readme = 'readme.md'
 repository = 'https://github.com/kaikalii/pane'
-version = '0.2.1'
+version = '0.3.0'
