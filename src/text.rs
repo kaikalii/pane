@@ -440,7 +440,7 @@ where
     type Scalar = f64;
     fn char_width(&mut self, character: char, font_size: u32) -> Self::Scalar {
         if let Ok(texture) = <Self as CharacterCache>::character(self, font_size, character) {
-            texture.size.x()
+            texture.advance_size.x()
         } else {
             panic!("CharacterWidthCache::character returned Err")
         }

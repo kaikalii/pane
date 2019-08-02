@@ -12,7 +12,7 @@ const MESSAGE3: &str = "in the shape of an 'L' on her forehead.";
 
 fn main() {
     // Initialize the glyphs
-    let mut glyphs = BufferGlyphs::from_bytes(ROBOTO).unwrap();
+    let mut glyphs = buffer_glyphs_from_bytes(ROBOTO).unwrap();
 
     // Initialize a text format
     let format = TextFormat::new(50).color(color::WHITE);

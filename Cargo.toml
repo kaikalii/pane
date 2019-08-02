@@ -2,15 +2,15 @@
 name = 'simple'
 
 [dependencies]
-rusttype = '0.7.4'
+rusttype = '0.7.7'
 
 [dependencies.graphics_buffer]
 optional = true
-version = '0.6.0'
+version = '0.7.0'
 
 [dependencies.piston2d-graphics]
 optional = true
-version = '0.30.0'
+version = '0.33.0'
 
 [features]
 buffer = ['graphics_buffer']
